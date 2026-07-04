@@ -2605,7 +2605,7 @@ END
 STRINGTABLE
 BEGIN
     IDC_REGULARSURF         "Die Video-Oberfläche wird als reguläre Offscreen-Oberfläche zugewiesen."
-    IDC_DX9RESIZER_COMBO    "Wenn Pixel-Shader 2.0 nicht unterstützt wird, wird automatisch Simple Bilinear benutzt."
+    IDC_DX9RESIZER_COMBO    "Wenn Pixel-Shader 2.0 nicht unterstützt wird, wird automatisch Simple Bilinear verwendet."
 END
 
 STRINGTABLE
@@ -3444,10 +3444,10 @@ BEGIN
     IDS_VDF_STATUS_FRAMESIZE "Videoauflösung:"
     IDS_VDF_STATUS_OUTPUT   "Ausgabeformat:"
     IDS_VDF_STATUS_ADAPTER  "Grafikprozessor:"
-    IDS_VDF_TT_AR           "Markiert - Stream-Seitenverhältnis wird benutzt.\nUnmarkiert - Container-Seitenverhältnis wird benutzt.\nTeilmarkiert - Stream-Seitenverhältnis wird nicht bei Dateien mit einem Container-Seitenverhältnis benutzt (empfohlen)."
+    IDS_VDF_TT_AR           "Markiert - Stream-Seitenverhältnis wird verwendet.\nUnmarkiert - Container-Seitenverhältnis wird verwendet.\nTeilmarkiert - Stream-Seitenverhältnis wird nicht bei Dateien mit einem Container-Seitenverhältnis verwendet (empfohlen)."
     IDS_VDF_TT_PRESET       "Ändert die Beziehung zwischen Geschwindigkeit und Qualität."
-    IDS_VDF_TT_STANDARD     "Diese Einstellung wird nur benutzt, wenn der Filter eine YCbCr <-> RGB Konvertierung ausführt."
-    IDS_VDF_TT_RGB_LEVELS   "Diese Einstellung wird nur benutzt, wenn der Filter eine YCbCr -> RGB Konvertierung ausführt."
+    IDS_VDF_TT_STANDARD     "Diese Einstellung wird nur verwendet, wenn der Filter eine YCbCr <-> RGB Konvertierung ausführt."
+    IDS_VDF_TT_RGB_LEVELS   "Diese Einstellung wird nur verwendet, wenn der Filter eine YCbCr -> RGB Konvertierung ausführt."
 END
 
 STRINGTABLE
@@ -3462,9 +3462,9 @@ BEGIN
     IDS_MPEG2_BRIGHTNESS    "Helligkeit:"
     IDS_MPEG2_RESET         "Zurücksetzen"
     IDS_MPEG2_NOTE1         "Hinweis: Benutzung der nicht-planaren Ausgabe! Bob-Deinterlacing oder Änderung der Farbeinstellungen kann die Performance beeinträchtigen. 'Auto' Deinterlacer wechselt zu 'Blend', wenn notwendig."
-    IDS_MPEG2_CONTRAST      "Kontrast"
-    IDS_MPEG2_HUE           "Farbton"
-    IDS_MPEG2_SATURATION    "Sättigung"
+    IDS_MPEG2_CONTRAST      "Kontrast:"
+    IDS_MPEG2_HUE           "Farbton:"
+    IDS_MPEG2_SATURATION    "Sättigung:"
     IDS_MPEG2_READ_AR       "Seitenverhältnis aus Stream lesen"
 END
 
