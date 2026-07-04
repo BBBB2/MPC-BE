@@ -366,14 +366,17 @@ BEGIN DIALOGEX IDD_PPAGEMISC LINES 36
 35		"Exportieren..."
 END
 
-BEGIN DIALOGEX IDD_PPAGEMOUSE LINES 17
+BEGIN DIALOGEX IDD_PPAGEMOUSE LINES 22
 5		"Linke Maustaste"
 6		"Einfacher Klick"
 8		"Wenn nichts geladen ist, die letzte Datei öffnen"
 10		"Doppelklick"
 12		"Fenster im Videobereich verschieben"
-13		"Rechtsklick"
-16		"Zurücksetzen"
+13		"Enable long press speed-up"
+14		"Long press speed"
+16		"Long press delay"
+18		"Rechtsklick"
+21		"Zurücksetzen"
 END
 
 BEGIN DIALOGEX IDD_PPAGEOSD LINES 26

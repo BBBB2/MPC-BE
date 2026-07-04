@@ -3018,13 +3018,9 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 			if (m_bLeftLongPressSpeedCandidate) {
 				m_bLeftLongPressSpeedCandidate = false;
 				if ((GetKeyState(VK_LBUTTON) & 0x8000) && IsLeftLongPressSpeedAvailable(0)) {
-					int nRate = AfxGetAppSettings().nMouseLongPressLeftSpeedRate;
-					if (nRate != 2 && nRate != 4 && nRate != 8 && nRate != 12 && nRate != 16) {
-						nRate = 4;
-					}
 					m_leftLongPressSpeedPreviousRate = m_PlaybackRate;
 					m_bLeftLongPressSpeedActive = true;
-					SetPlayingRate((double)nRate);
+					SetPlayingRate((double)s.nMouseLeftLongPressSpeedRate);
 				}
 			}
 		}
@@ -3753,7 +3749,7 @@ BOOL CMainFrame::MouseMessage(UINT id, UINT nFlags, CPoint point)
 bool CMainFrame::IsLeftLongPressSpeedAvailable(UINT nFlags) const
 {
 	const CAppSettings& s = AfxGetAppSettings();
-	if (!s.bMouseLongPressLeftSpeed || m_eMediaLoadState != MLS_LOADED || m_bIsLiveOnline) {
+	if (!s.bMouseLeftLongPressSpeed || m_eMediaLoadState != MLS_LOADED || m_bIsLiveOnline) {
 		return false;
 	}
 
@@ -3776,11 +3772,7 @@ void CMainFrame::BeginLeftLongPressSpeed(UINT nFlags, CPoint point)
 	m_bLeftLongPressSpeedCandidate = true;
 	m_leftLongPressSpeedPoint = point;
 
-	int nDelay = AfxGetAppSettings().nMouseLongPressLeftSpeedDelay;
-	if (nDelay < 250 || nDelay > 500) {
-		nDelay = 300;
-	}
-	SetTimer(TIMER_MOUSE_LEFT_LONGPRESS_SPEED, nDelay, nullptr);
+	SetTimer(TIMER_MOUSE_LEFT_LONGPRESS_SPEED, AfxGetAppSettings().nMouseLeftLongPressSpeedDelay, nullptr);
 }
 
 bool CMainFrame::CancelLeftLongPressSpeed(bool bRestoreRate)

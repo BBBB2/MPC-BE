@@ -524,9 +524,9 @@ public:
 	bool			bMouseLeftClickOpenRecent;
 	UINT			nMouseLeftDblClick;
 	bool			bMouseEasyMove;
-	bool			bMouseLongPressLeftSpeed;
-	int			nMouseLongPressLeftSpeedRate;
-	int			nMouseLongPressLeftSpeedDelay;
+	bool			bMouseLeftLongPressSpeed;
+	int				nMouseLeftLongPressSpeedRate;
+	int				nMouseLeftLongPressSpeedDelay;
 	UINT			nMouseRightClick;
 	struct MOUSE_ASSIGNMENT {
 		UINT normal;

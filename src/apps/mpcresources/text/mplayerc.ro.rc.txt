@@ -366,14 +366,17 @@ BEGIN DIALOGEX IDD_PPAGEMISC LINES 36
 35		"Exportă"
 END
 
-BEGIN DIALOGEX IDD_PPAGEMOUSE LINES 17
+BEGIN DIALOGEX IDD_PPAGEMOUSE LINES 22
 5		"Butonul din stânga"
 6		"Clic"
 8		"Dacă nu s-a încărcat nimic, deschide fișierul recent"
 10		"Dublu clic"
 12		"Mută fereastra lângă zona video"
-13		"Clic dreapta"
-16		"Implicit"
+13		"Enable long press speed-up"
+14		"Long press speed"
+16		"Long press delay"
+18		"Clic dreapta"
+21		"Implicit"
 END
 
 BEGIN DIALOGEX IDD_PPAGEOSD LINES 26
