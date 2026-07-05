@@ -10,6 +10,7 @@ Player
 Fixed remembering the title of the entry in the playlist for URLs processed by yt-dlp.
 Fixed getting icon for file properties window when path length is 260 or more characters.
 The "Use Blur Behind effect" setting has been removed because it does not work correctly.
+Added the ability to speed up video by long-pressing the left mouse button.
 
 Added Vietnamese translation (by vuanhvu11982-afk).
 Updated German translation (by Klaus1189).
