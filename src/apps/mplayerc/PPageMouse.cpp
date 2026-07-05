@@ -138,16 +138,18 @@ BOOL CPPageMouse::OnInitDialog()
 	m_chkMouseEasyMove.SetCheck(s.bMouseEasyMove ? BST_CHECKED : BST_UNCHECKED);
 	m_chkMouseLongPressLeftSpeed.SetCheck(s.bMouseLeftLongPressSpeed ? BST_CHECKED : BST_UNCHECKED);
 
-	AddStringData(m_cmbMouseLongPressLeftSpeedRate, L"2x", 2);
-	AddStringData(m_cmbMouseLongPressLeftSpeedRate, L"3x", 3);
-	AddStringData(m_cmbMouseLongPressLeftSpeedRate, L"4x", 4);
-	AddStringData(m_cmbMouseLongPressLeftSpeedRate, L"8x", 8);
+	CStringW str;
+	for (int i = 2; i <= 8; i++) {
+		str.Format(L"%dx", i);
+		AddStringData(m_cmbMouseLongPressLeftSpeedRate, str, i);
+	}
 	SelectByItemData(m_cmbMouseLongPressLeftSpeedRate, s.nMouseLeftLongPressSpeedRate);
 	m_cmbMouseLongPressLeftSpeedRate.EnableWindow(s.bMouseLeftLongPressSpeed ? TRUE : FALSE);
 
-	AddStringData(m_cmbMouseLongPressLeftSpeedDelay, L"300 ms", 300);
-	AddStringData(m_cmbMouseLongPressLeftSpeedDelay, L"400 ms", 400);
-	AddStringData(m_cmbMouseLongPressLeftSpeedDelay, L"500 ms", 500);
+	for (const auto delay : g_LongPressDelays) {
+		str.Format(L"%d ms", delay);
+		AddStringData(m_cmbMouseLongPressLeftSpeedDelay, str, delay);
+	}
 	SelectByItemData(m_cmbMouseLongPressLeftSpeedDelay, s.nMouseLeftLongPressSpeedDelay);
 	m_cmbMouseLongPressLeftSpeedDelay.EnableWindow(s.bMouseLeftLongPressSpeed ? TRUE : FALSE);
 

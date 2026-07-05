@@ -871,7 +871,7 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	profile.ReadBool(IDS_R_SETTINGS, IDS_RS_REWIND, fRewind);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_VOLUME_STEP, nVolumeStep, 1, 10);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_SPEED_STEP, nSpeedStep);
-	nSpeedStep = discard(nSpeedStep, 0, { 1, 5, 10, 20, 25, 50, 100 });
+	nSpeedStep = discard(nSpeedStep, 0, g_SpeedSteps);
 	profile.ReadBool(IDS_R_SETTINGS, IDS_RS_SPEED_NOTRESET, bSpeedNotReset);
 
 	m_VRSettings.Load();
@@ -961,7 +961,7 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	profile.ReadBool(IDS_R_SETTINGS, IDS_RS_SNAPTODESKTOPEDGES, bSnapToDesktopEdges);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_WINDOWMODEPLAYBACK, nPlaybackWindowMode, PLAYBACKWND_NONE, PLAYBACKWND_FITSCREENLARGER);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_AUTOSCALEFACTOR, nAutoScaleFactor);
-	nAutoScaleFactor = discard(nAutoScaleFactor, 100, { 50, 100, 200 });
+	nAutoScaleFactor = discard(nAutoScaleFactor, 100, g_AutoScaleFactors);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_AUTOFITFACTOR, nAutoFitFactor, 20, 80);
 	profile.ReadBool(IDS_R_SETTINGS, IDS_RS_RESETWINDOWAFTERCLOSINGFILE, bResetWindowAfterClosingFile);
 
@@ -1251,9 +1251,9 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	profile.ReadBool(IDS_R_MOUSE, IDS_RS_MOUSE_EASYMOVE, bMouseEasyMove);
 	profile.ReadBool(IDS_R_MOUSE, IDS_RS_MOUSE_LONGPRESS_LEFT_SPEED, bMouseLeftLongPressSpeed);
 	profile.ReadInt(IDS_R_MOUSE, IDS_RS_MOUSE_LONGPRESS_LEFT_SPEED_RATE, nMouseLeftLongPressSpeedRate);
-	nMouseLeftLongPressSpeedRate = discard(nMouseLeftLongPressSpeedRate, 2, { 2, 3, 4, 8 });
+	nMouseLeftLongPressSpeedRate = discard(nMouseLeftLongPressSpeedRate, 2, 2, 8);
 	profile.ReadInt(IDS_R_MOUSE, IDS_RS_MOUSE_LONGPRESS_LEFT_SPEED_DELAY, nMouseLeftLongPressSpeedDelay);
-	nMouseLeftLongPressSpeedDelay = discard(nMouseLeftLongPressSpeedDelay, 300, { 300, 400, 500 });
+	nMouseLeftLongPressSpeedDelay = discard(nMouseLeftLongPressSpeedDelay, 300, g_LongPressDelays);
 
 	// OSD
 	profile.ReadUInt(IDS_R_OSD, IDS_RS_SHOWOSD, ShowOSD.value);
@@ -1508,7 +1508,7 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 			: YT_DLP::acodec_opus;
 	}
 	profile.ReadInt(IDS_R_ONLINESERVICES, IDS_RS_YDL_MAXHEIGHT, iYdlMaxHeight);
-	iYdlMaxHeight = discard(iYdlMaxHeight, 720, s_CommonVideoHeights);
+	iYdlMaxHeight = discard(iYdlMaxHeight, 720, g_CommonVideoHeights);
 	profile.ReadBool(IDS_R_ONLINESERVICES, IDS_RS_YDL_HIGHFPS, bYdlHighFps);
 	profile.ReadBool(IDS_R_ONLINESERVICES, IDS_RS_YDL_HDR, bYdlHDR);
 	profile.ReadBool(IDS_R_ONLINESERVICES, IDS_RS_YDL_HIGHBITRATE, bYdlHighBitrate);
