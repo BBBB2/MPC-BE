@@ -14,6 +14,7 @@ The "Use Blur Behind effect" setting has been removed because it does not work c
 Added Vietnamese translation (by vuanhvu11982-afk).
 Updated German translation (by Klaus1189).
 Updated Romanian translation (by Andrei Miloiu).
+Updated Japanese translation (by tsubasanouta).
 
 Updated libraries:
 	ffmpeg n8.2-dev-2181-g6f2f3755a0.

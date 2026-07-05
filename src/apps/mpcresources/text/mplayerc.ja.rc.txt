@@ -372,9 +372,9 @@ BEGIN DIALOGEX IDD_PPAGEMOUSE LINES 22
 8		"何も読み込まれていない場合は、最近使ったファイルを開く"
 10		"ダブル クリック"
 12		"映像領域でウィンドウを移動する"
-13		"Enable long press speed-up"
-14		"Long press speed"
-16		"Long press delay"
+13		"長押し倍速を有効にする"
+14		"長押し倍速設定"
+16		"開始までの遅延"
 18		"右クリック"
 21		"既定"
 END
