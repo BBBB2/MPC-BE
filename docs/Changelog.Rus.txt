@@ -18,7 +18,8 @@ yt-dlp
 Обновлен японский перевод (автор tsubasanouta).
 
 Обновлены библиотеки:
-	ffmpeg n8.2-dev-2181-g6f2f3755a0.
+	ffmpeg n8.2-dev-2181-g6f2f3755a0;
+	nanosvg git-48120e9.
 
 
 1.9.0 - 2026-06-27
