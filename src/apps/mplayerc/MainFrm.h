@@ -1155,7 +1155,6 @@ public:
 
 	afx_msg void OnPlaylistOpenFolder();
 	afx_msg void OnPlaylistPrivacyToggle();
-	afx_msg void OnUpdatePlaylistPrivacyToggle(CCmdUI* pCmdUI);
 
 	afx_msg void OnClose();
 

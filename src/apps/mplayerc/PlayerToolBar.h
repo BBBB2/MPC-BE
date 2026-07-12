@@ -115,6 +115,7 @@ protected:
 
 	afx_msg void OnUpdateAudio(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateSubtitle(CCmdUI* pCmdUI);
+	afx_msg void OnUpdatePrivacyToggle(CCmdUI* pCmdUI);
 
 	virtual INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const override;
 

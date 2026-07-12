@@ -537,6 +537,7 @@ BEGIN_MESSAGE_MAP(CPlayerToolBar, CToolBar)
 
 	ON_UPDATE_COMMAND_UI(ID_NAVIGATE_AUDIO, OnUpdateAudio)
 	ON_UPDATE_COMMAND_UI(ID_NAVIGATE_SUBTITLES, OnUpdateSubtitle)
+	ON_UPDATE_COMMAND_UI(ID_PLAYLIST_DESCRAMBLE, OnUpdatePrivacyToggle)
 END_MESSAGE_MAP()
 
 // CPlayerToolBar message handlers
@@ -551,6 +552,16 @@ void CPlayerToolBar::OnUpdateSubtitle(CCmdUI* pCmdUI)
 	pCmdUI->Enable(m_bSubtitleEnable);
 }
 
+void CPlayerToolBar::OnUpdatePrivacyToggle(CCmdUI* pCmdUI)
+{
+	// Always clickable; the padlock reflects the current reveal state.
+	const bool bRevealed = m_pMainFrame && m_pMainFrame->m_wndPlaylistBar.m_bPrivacyRevealed;
+
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck(bRevealed ? 1 : 0);
+	SetPrivacyRevealed(bRevealed);
+}
+
 void CPlayerToolBar::OnCustomDraw(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMTBCUSTOMDRAW pTBCD = reinterpret_cast<LPNMTBCUSTOMDRAW>(pNMHDR);
@@ -562,7 +573,10 @@ void CPlayerToolBar::OnCustomDraw(NMHDR *pNMHDR, LRESULT *pResult)
 		m_bGPUIconShow = false;
 	}
 
-	static const int sep[] = {2, 7, 10, 11};
+	// JD Privacy fork: separator indices shifted by the padlock button at index 10.
+	// These rects get repainted with the background, so a non-separator index here
+	// would erase that button.
+	static const int sep[] = {2, 7, 11, 12};
 
 	if (s.bUseDarkTheme) {
 		GRADIENT_RECT gr = { 0, 1 };

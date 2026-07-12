@@ -19,6 +19,7 @@
  */
 
 #include "stdafx.h"
+#include "JDPrivacy.h"
 #include "AboutDlg.h"
 #include "DSUtil/FileHandle.h"
 
@@ -57,6 +58,7 @@ BOOL CAboutDlg::OnInitDialog()
 #ifdef _DEBUG
 	m_strVersionNumber.Append(L", Debug");
 #endif
+	m_strVersionNumber.AppendFormat(L" [JD Privacy fork v%s]", JDPrivacy::FORK_VERSION);
 #ifdef REV_HASH
 	m_strGitInfo.AppendFormat(L"git %hs - %hs", REV_DATE, REV_HASH);
 #endif
