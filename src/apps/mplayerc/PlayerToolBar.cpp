@@ -158,6 +158,7 @@ void CPlayerToolBar::SwitchTheme()
 			TBBS_SEPARATOR,
 			TBBS_BUTTON,
 			TBBS_BUTTON,
+			TBBS_CHECKBOX,   // JD Privacy fork: padlock
 			TBBS_SEPARATOR,
 			TBBS_SEPARATOR,
 			TBBS_CHECKBOX,
@@ -408,12 +409,22 @@ BOOL CPlayerToolBar::PreCreateWindow(CREATESTRUCT& cs)
 	return TRUE;
 }
 
+void CPlayerToolBar::SetPrivacyRevealed(bool bRevealed)
+{
+	TBBUTTONINFOW bi;
+	bi.cbSize = sizeof(bi);
+	bi.dwMask = TBIF_IMAGE;
+	bi.iImage = bRevealed ? 17 : 11; // 11 = locked, 17 = unlocked
+
+	GetToolBarCtrl().SetButtonInfo(ID_PLAYLIST_DESCRAMBLE, &bi);
+}
+
 void CPlayerToolBar::SetMute(bool fMute)
 {
 	TBBUTTONINFOW bi;
 	bi.cbSize = sizeof(bi);
 	bi.dwMask = TBIF_IMAGE;
-	bi.iImage = fMute ? 13 : 12;
+	bi.iImage = fMute ? 14 : 13;
 
 	GetToolBarCtrl().SetButtonInfo(ID_VOLUME_MUTE, &bi);
 
@@ -428,7 +439,7 @@ bool CPlayerToolBar::IsMuted()
 
 	GetToolBarCtrl().GetButtonInfo(ID_VOLUME_MUTE, &bi);
 
-	return (bi.iImage == 13);
+	return (bi.iImage == 14);
 }
 
 int CPlayerToolBar::GetVolume()
@@ -463,7 +474,7 @@ int CPlayerToolBar::GetVolume()
 
 int CPlayerToolBar::GetMinWidth()
 {
-	return m_nButtonHeight * 12 + 155 + m_nWidthIncrease;
+	return m_nButtonHeight * 13 + 155 + m_nWidthIncrease;
 }
 
 void CPlayerToolBar::SetVolume(int volume)
@@ -751,9 +762,9 @@ void CPlayerToolBar::OnInitialUpdate()
 
 	SetButtonInfo(7, GetItemID(7), TBBS_SEPARATOR | TBBS_DISABLED, 48);
 	CRect r10, r12;
-	GetItemRect(10, &r10);
-	GetItemRect(12, &r12);
-	SetButtonInfo(11, GetItemID(11), TBBS_SEPARATOR | TBBS_DISABLED, vr2.left - r10.right - r12.Width());
+	GetItemRect(11, &r10);
+	GetItemRect(13, &r12);
+	SetButtonInfo(12, GetItemID(12), TBBS_SEPARATOR | TBBS_DISABLED, vr2.left - r10.right - r12.Width());
 }
 
 BOOL CPlayerToolBar::OnVolumeMute(UINT nID)
@@ -928,13 +939,13 @@ BOOL CPlayerToolBar::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 			TBBUTTONINFOW bi = { sizeof(bi), TBIF_IMAGE };
 			GetToolBarCtrl().GetButtonInfo(ID_VOLUME_MUTE, &bi);
 
-			if (bi.iImage == 12) {
+			if (bi.iImage == 13) {
 				s_strTipText = ResStr(ID_VOLUME_MUTE);
 			}
-			else if (bi.iImage == 13) {
+			else if (bi.iImage == 14) {
 				s_strTipText = ResStr(ID_VOLUME_MUTE_OFF);
 			}
-			else if (bi.iImage == 14) {
+			else if (bi.iImage == 15) {
 				s_strTipText = ResStr(ID_VOLUME_MUTE_DISABLED);
 			}
 

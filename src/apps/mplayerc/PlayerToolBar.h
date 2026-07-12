@@ -82,6 +82,9 @@ public:
 
 	void SetColor();
 
+	// JD Privacy fork: swap padlock image (locked = masked, unlocked = revealed)
+	void SetPrivacyRevealed(bool bRevealed);
+
 private:
 	bool IsMuted();
 	void SetMute(bool fMute = true);

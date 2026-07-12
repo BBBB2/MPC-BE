@@ -492,6 +492,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 
 	ON_COMMAND(ID_PLAYLIST_OPENFOLDER, OnPlaylistOpenFolder)
 	ON_COMMAND(ID_PLAYLIST_DESCRAMBLE, OnPlaylistPrivacyToggle)
+	ON_UPDATE_COMMAND_UI(ID_PLAYLIST_DESCRAMBLE, OnUpdatePlaylistPrivacyToggle)
 
 	ON_WM_WTSSESSION_CHANGE()
 
@@ -10753,6 +10754,15 @@ void CMainFrame::OnPlaylistOpenFolder()
 void CMainFrame::OnPlaylistPrivacyToggle()
 {
 	m_wndPlaylistBar.TogglePrivacyReveal();
+}
+
+void CMainFrame::OnUpdatePlaylistPrivacyToggle(CCmdUI* pCmdUI)
+{
+	// Always available; reflects the current reveal state.
+	const bool bRevealed = m_wndPlaylistBar.m_bPrivacyRevealed;
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck(bRevealed ? 1 : 0);
+	m_wndToolBar.SetPrivacyRevealed(bRevealed);
 }
 
 void CMainFrame::SetDefaultWindowRect(int iMonitor, const bool bLastCall)
