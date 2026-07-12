@@ -193,7 +193,7 @@ CAppSettings::CAppSettings()
 void CAppSettings::CreateCommands()
 {
 	wmcmds.clear();
-	wmcmds.reserve(189);
+	wmcmds.reserve(190);
 
 	auto addcmd = [&](auto... args) {
 		wmcmds.emplace_back(args...);
@@ -410,6 +410,7 @@ void CAppSettings::CreateCommands()
 	addcmd(ID_MOVEWINDOWBYVIDEO_ONOFF, IDS_MOVEWINDOWBYVIDEO_ONOFF);
 
 	addcmd(ID_PLAYLIST_OPENFOLDER, IDS_PLAYLIST_OPENFOLDER);
+	addcmd(ID_PLAYLIST_DESCRAMBLE, IDS_PLAYLIST_DESCRAMBLE, 'N', FCONTROL|FALT);
 
 	addcmd(ID_FILE_LOAD_AUDIO, IDS_AG_LOAD_AUDIO);
 }
@@ -1022,6 +1023,13 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	profile.ReadInt(IDS_R_AUDIO, IDS_RS_VOLUME, nVolume, 0, 100);
 	profile.ReadInt(IDS_R_AUDIO, IDS_RS_BALANCE, nBalance, -100, 100);
 	profile.ReadBool(IDS_R_AUDIO, IDS_RS_MUTE, fMute);
+	// JD Privacy fork: independent start-muted policy. Applied every launch;
+	// the user's in-session mute changes are never written back to it.
+	profile.ReadBool(IDS_R_AUDIO, L"StartMuted", bAudioStartMuted);
+	if (bAudioStartMuted) {
+		fMute = true;
+	}
+	profile.ReadInt(IDS_R_SETTINGS, L"PrivacyRevealSeconds", nPrivacyRevealSeconds, 10, 86400);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.ReadBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);
@@ -1708,6 +1716,8 @@ void CAppSettings::SaveSettings()
 	profile.WriteInt(IDS_R_AUDIO, IDS_RS_VOLUME, nVolume);
 	profile.WriteInt(IDS_R_AUDIO, IDS_RS_BALANCE, nBalance);
 	profile.WriteBool(IDS_R_AUDIO, IDS_RS_MUTE, fMute);
+	profile.WriteBool(IDS_R_AUDIO, L"StartMuted", bAudioStartMuted);
+	profile.WriteInt(IDS_R_SETTINGS, L"PrivacyRevealSeconds", nPrivacyRevealSeconds);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.WriteBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);

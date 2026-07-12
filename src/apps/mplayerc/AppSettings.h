@@ -585,6 +585,9 @@ public:
 	int				nVolume;
 	int				nVolumeStep;
 	bool			fMute;
+	// JD Privacy fork
+	bool			bAudioStartMuted = true;
+	int				nPrivacyRevealSeconds = 3600;
 	int				nBalance;
 	int				nLoops;
 	bool			fLoopForever;

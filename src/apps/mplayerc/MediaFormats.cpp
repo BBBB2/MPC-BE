@@ -20,6 +20,7 @@
  */
 
 #include "stdafx.h"
+#include "JDPrivacy.h"
 #include "MainFrm.h"
 #include "MediaFormats.h"
 
@@ -185,6 +186,9 @@ void CMediaFormats::UpdateData(const bool bSave)
 		emplace_back(L"dsm",         ResStr(IDS_MFMT_DSM),         L"dsm dsv dsa dss");
 		emplace_back(L"rawvideo",    ResStr(IDS_MFMT_RAW_VIDEO),   L"y4m h264 264 vc1 h265 265 hm10 hevc obu");
 		emplace_back(L"other",       ResStr(IDS_MFMT_OTHER),       L"amv wtv dvr-ms mxf ivf nut dav");
+		// JD Privacy fork: encoded (ROT+1) video extensions so marked files are
+		// treated as known media in dialogs, folder scans and next/prev discovery.
+		emplace_back(L"jdprivacy",   L"JD Privacy media",          JDPrivacy::EncodedVideoExtSpaceList());
 		// special files. used TScript to exclude automatic association
 		emplace_back(L"swf",         ResStr(IDS_MFMT_SWF),         L"swf", TScript, L"ShockWave ActiveX control");
 		emplace_back(L"avisynth",    ResStr(IDS_MFMT_AVISYNTH),    L"avs", TScript);

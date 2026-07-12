@@ -29,6 +29,11 @@
 #include "DSUtil/UrlParser.h"
 #include "SaveTextFileDialog.h"
 #include "PlayerPlaylistBar.h"
+#include "JDPrivacy.h"
+
+// JD Privacy fork: timer id for auto re-mask (defined here so it is visible
+// to OnTimer, which appears earlier in this file than TogglePrivacyReveal).
+#define TIMER_PRIVACY_REMASK 47
 #include "FileDialogs.h"
 #include "Content.h"
 #include "PlaylistNameDlg.h"
@@ -3092,7 +3097,11 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 
 	CString fmt, file;
 	fmt.Format(L"%%0%dd. %%s", (int)log10(0.1 + curPlayList.GetCount()) + 1);
-	file.Format(fmt, nItem + 1, m_list.GetItemText(nItem, COL_NAME));
+	CString itemName = m_list.GetItemText(nItem, COL_NAME);
+	if (m_bPrivacyRevealed) {
+		itemName = JDPrivacy::DecodeDisplayName((LPCWSTR)itemName).c_str();
+	}
+	file.Format(fmt, nItem + 1, itemName);
 
 	int offset = 0;
 	if (GetCurTab().type == PL_EXPLORER) {
@@ -3108,6 +3117,10 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 			file.TrimRight(L'>');
 			file = L"[" + file + L"]";
 			bfsFolder = true;
+		}
+
+		if (m_bPrivacyRevealed) {
+			file = JDPrivacy::DecodeDisplayName((LPCWSTR)file).c_str();
 		}
 
 		HICON hIcon = nullptr;
@@ -3261,6 +3274,17 @@ void CPlayerPlaylistBar::OnMouseMove(UINT nFlags, CPoint point)
 
 void CPlayerPlaylistBar::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == TIMER_PRIVACY_REMASK) {
+		KillTimer(TIMER_PRIVACY_REMASK);
+		if (m_bPrivacyRevealed) {
+			m_bPrivacyRevealed = false;
+			if (IsWindow(m_list.m_hWnd)) {
+				m_list.Invalidate();
+			}
+		}
+		return;
+	}
+
 	int iTopItem = m_list.GetTopIndex();
 	int iBottomItem = iTopItem + m_list.GetCountPerPage() - 1;
 
@@ -3502,6 +3526,25 @@ BOOL CPlayerPlaylistBar::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 	return TRUE;
 }
 
+void CPlayerPlaylistBar::TogglePrivacyReveal()
+{
+	m_bPrivacyRevealed = !m_bPrivacyRevealed;
+	if (IsWindow(m_hWnd)) {
+		if (m_bPrivacyRevealed) {
+			int secs = AfxGetAppSettings().nPrivacyRevealSeconds;
+			if (secs < 10) {
+				secs = 10;
+			}
+			SetTimer(TIMER_PRIVACY_REMASK, (UINT)secs * 1000u, nullptr);
+		} else {
+			KillTimer(TIMER_PRIVACY_REMASK);
+		}
+	}
+	if (IsWindow(m_list.m_hWnd)) {
+		m_list.Invalidate();
+	}
+}
+
 void CPlayerPlaylistBar::OnContextMenu(CWnd* /*pWnd*/, CPoint p)
 {
 	if (bTMenuPopup) {
@@ -3599,7 +3642,8 @@ void CPlayerPlaylistBar::OnContextMenu(CWnd* /*pWnd*/, CPoint p)
 		M_HIDEFULLSCREEN,
 		M_NEXTONERROR,
 		M_SKIPINVALID,
-		M_DURATION
+		M_DURATION,
+		M_PRIVACY
 	};
 
 	CAppSettings& s = AfxGetAppSettings();
@@ -3659,6 +3703,7 @@ void CPlayerPlaylistBar::OnContextMenu(CWnd* /*pWnd*/, CPoint p)
 	}
 	m.AppendMenuW(MF_SEPARATOR);
 	m.AppendMenuW(MF_STRING | MF_ENABLED | (s.bShowPlaylistTooltip ? MF_CHECKED : MF_UNCHECKED), M_SHOWTOOLTIP, ResStr(IDS_PLAYLIST_SHOWTOOLTIP));
+	m.AppendMenuW(MF_STRING | MF_ENABLED | (m_bPrivacyRevealed ? MF_CHECKED : MF_UNCHECKED), M_PRIVACY, ResStr(IDS_PLAYLIST_DESCRAMBLE) + L"\tCtrl+Alt+N");
 	m.AppendMenuW(MF_STRING | MF_ENABLED | (s.bShowPlaylistSearchBar ? MF_CHECKED : MF_UNCHECKED), M_SHOWSEARCHBAR, ResStr(IDS_PLAYLIST_SHOWSEARCHBAR));
 	m.AppendMenuW(MF_STRING | MF_ENABLED | (s.bHidePlaylistFullScreen ? MF_CHECKED : MF_UNCHECKED), M_HIDEFULLSCREEN, ResStr(IDS_PLAYLIST_HIDEFS));
 	m.AppendMenuW(MF_SEPARATOR);
@@ -4022,6 +4067,9 @@ void CPlayerPlaylistBar::OnContextMenu(CWnd* /*pWnd*/, CPoint p)
 			break;
 		case M_SHOWTOOLTIP:
 			s.bShowPlaylistTooltip = !s.bShowPlaylistTooltip;
+			break;
+		case M_PRIVACY:
+			TogglePrivacyReveal();
 			break;
 		case M_SHOWSEARCHBAR:
 			s.bShowPlaylistSearchBar = !s.bShowPlaylistSearchBar;

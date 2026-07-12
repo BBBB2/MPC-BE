@@ -325,6 +325,10 @@ public:
 	bool IsHiddenDueToFullscreen() const;
 	void SetHiddenDueToFullscreen(bool bHidenDueToFullscreen);
 
+	// JD Privacy fork: display-only reveal of decoded filenames
+	bool m_bPrivacyRevealed = false;
+	void TogglePrivacyReveal();
+
 	std::vector<CPlaylist*> m_pls;
 	size_t m_nCurPlayListIndex = 0;
 	CPlaylist& GetCurPlayList() const {

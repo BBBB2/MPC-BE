@@ -2424,6 +2424,7 @@ BEGIN
     IDS_PLAYLIST_RESTORE    "R&estore"
     IDS_PLAYLIST_SHUFFLE    "Shuffle"
     IDS_PLAYLIST_OPENFOLDER "Open containing folder"
+    IDS_PLAYLIST_DESCRAMBLE "Toggle privacy filenames"
 END
 
 STRINGTABLE

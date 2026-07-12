@@ -1154,6 +1154,7 @@ public:
 	afx_msg void OnChangeMouseEasyMove();
 
 	afx_msg void OnPlaylistOpenFolder();
+	afx_msg void OnPlaylistPrivacyToggle();
 
 	afx_msg void OnClose();
 

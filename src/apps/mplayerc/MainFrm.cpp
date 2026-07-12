@@ -491,6 +491,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_MOVEWINDOWBYVIDEO_ONOFF, OnChangeMouseEasyMove)
 
 	ON_COMMAND(ID_PLAYLIST_OPENFOLDER, OnPlaylistOpenFolder)
+	ON_COMMAND(ID_PLAYLIST_DESCRAMBLE, OnPlaylistPrivacyToggle)
 
 	ON_WM_WTSSESSION_CHANGE()
 
@@ -10747,6 +10748,11 @@ void CMainFrame::OnPlaylistOpenFolder()
 	if (m_wndPlaylistBar.GetCur(pli) && pli.m_fi.Valid()) {
 		ShellExecuteW(nullptr, nullptr, L"explorer.exe", L"/select,\"" + pli.m_fi.GetPath() + L"\"", nullptr, SW_SHOWNORMAL);
 	}
+}
+
+void CMainFrame::OnPlaylistPrivacyToggle()
+{
+	m_wndPlaylistBar.TogglePrivacyReveal();
 }
 
 void CMainFrame::SetDefaultWindowRect(int iMonitor, const bool bLastCall)

@@ -28,7 +28,10 @@ namespace Subtitle
 	static const LPCWSTR s_SubFileExts[] = {
 		L"srt", L"ass", L"ssa", L"sub", L"idx",
 		L"smi", L"sup", L"usf", L"vtt", L"psb",
-		L"xss", L"rt",  L"mks", L"lrc", L"ttml"
+		L"xss", L"rt",  L"mks", L"lrc", L"ttml",
+		// JD Privacy fork: encoded (ROT+1) subtitle extensions.
+		// Kept after the SubType-indexed entries above - do not reorder.
+		L"tsu", L"wuu", L"btt", L"ttb", L"tvc", L"jey", L"tvq", L"tnj", L"tcw", L"uunm", L"egyq"
 	};
 
 	enum SubType {

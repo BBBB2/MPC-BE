@@ -61,6 +61,20 @@ CProfile::CProfile()
 		return;
 	}
 
+	// JD Privacy fork: portable by default. If no settings exist yet, create
+	// the ini beside the executable when the folder is writable, instead of
+	// falling back to %APPDATA%/registry. Read-only locations (e.g. Program
+	// Files without elevation) keep the upstream fallback behaviour.
+	{
+		HANDLE hFile = ::CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (hFile != INVALID_HANDLE_VALUE) {
+			::CloseHandle(hFile);
+			m_IniPath = path;
+			m_bIniProgDir = true;
+			return;
+		}
+	}
+
 	path = GetIniUserProfile();
 	if (::PathFileExistsW(path)) {
 		m_IniPath = path;
