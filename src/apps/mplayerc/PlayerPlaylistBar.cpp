@@ -808,6 +808,11 @@ BOOL CPlayerPlaylistBar::Create(CWnd* pParentWnd, UINT defDockBarID)
 		return FALSE;
 	}
 
+	// JD Privacy fork: initial reveal state from [Settings] PrivacyRevealDefault.
+	// No auto re-mask timer here - the timeout applies only to manual reveals,
+	// so "revealed by default" stays revealed.
+	m_bPrivacyRevealed = AfxGetAppSettings().bPrivacyRevealDefault;
+
 	m_list.CreateEx(
 		0, //less margins//WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE,
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_TABSTOP
@@ -3281,6 +3286,9 @@ void CPlayerPlaylistBar::OnTimer(UINT_PTR nIDEvent)
 			if (IsWindow(m_list.m_hWnd)) {
 				m_list.Invalidate();
 			}
+			if (m_pMainFrame && IsWindow(m_pMainFrame->m_hWnd)) {
+				m_pMainFrame->RefreshPrivacyBars();
+			}
 		}
 		return;
 	}
@@ -3542,6 +3550,11 @@ void CPlayerPlaylistBar::TogglePrivacyReveal()
 	}
 	if (IsWindow(m_list.m_hWnd)) {
 		m_list.Invalidate();
+	}
+
+	// Title bar and seek bar share GetTextForBar(), so refresh both.
+	if (m_pMainFrame && IsWindow(m_pMainFrame->m_hWnd)) {
+		m_pMainFrame->RefreshPrivacyBars();
 	}
 }
 

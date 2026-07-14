@@ -465,6 +465,7 @@ public:
 	static bool GetDispMode(const DWORD iModeNum, dispmode& dm, const CString& DisplayName);
 
 	void UpdateWindowTitle();
+	void RefreshPrivacyBars(); // JD Privacy fork: repaint title + seek bar
 
 private:
 	void SetDispMode(const dispmode& dm, const CString& DisplayName, const BOOL bForceRegistryMode = FALSE);
@@ -769,6 +770,7 @@ public:
 	BOOL OnTouchInput(CPoint pt, int nInputNumber, int nInputsCount, PTOUCHINPUT pInput);
 
 	LPCWSTR GetTextForBar(int style);
+	CString m_strPrivacyBarText; // JD Privacy fork: backing store for decoded bar text
 	void UpdateTitle();
 
 	// Dvb capture

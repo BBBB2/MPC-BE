@@ -22,6 +22,7 @@
 #include "stdafx.h"
 
 #include "MainFrm.h"
+#include "JDPrivacy.h"
 #include <afxglobals.h>
 #include <..\src\mfc\afximpl.h>
 
@@ -1531,17 +1532,41 @@ BOOL CMainFrame::OnTouchInput(CPoint pt, int nInputNumber, int nInputsCount, PTO
 
 LPCWSTR CMainFrame::GetTextForBar(int style)
 {
+	LPCWSTR text = nullptr;
+
 	if (style == TEXTBAR_FILENAME) {
-		return GetFileNameOrTitleOrPath();
+		text = GetFileNameOrTitleOrPath();
 	}
-	if (style == TEXTBAR_TITLE) {
-		return GetTitleOrFileNameOrPath();
+	else if (style == TEXTBAR_TITLE) {
+		text = GetTitleOrFileNameOrPath();
 	}
-	if (style == TEXTBAR_FULLPATH) {
-		return m_SessionInfo.Path.GetString();
+	else if (style == TEXTBAR_FULLPATH) {
+		text = m_SessionInfo.Path.GetString();
 	}
 
-	return L"";
+	if (!text) {
+		return L"";
+	}
+
+	// JD Privacy fork: show decoded names in the title bar and seek bar while
+	// revealed. Display only - the file on disk is untouched. The returned
+	// pointer must outlive the call, hence the member buffer.
+	if (m_wndPlaylistBar.m_bPrivacyRevealed && *text) {
+		m_strPrivacyBarText = JDPrivacy::DecodeDisplayPathOrName(text).c_str();
+		return m_strPrivacyBarText.GetString();
+	}
+
+	return text;
+}
+
+void CMainFrame::RefreshPrivacyBars()
+{
+	// m_wndSeekBar is private, so the refresh lives here rather than in the
+	// playlist bar. Title bar and seek bar both read GetTextForBar().
+	UpdateWindowTitle();
+	if (IsWindow(m_wndSeekBar.m_hWnd)) {
+		m_wndSeekBar.Invalidate();
+	}
 }
 
 void CMainFrame::UpdateTitle()

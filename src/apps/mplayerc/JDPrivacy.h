@@ -23,7 +23,7 @@ namespace JDPrivacy {
 
 // Fork version. Bumped with every change so the running build is identifiable
 // (shown in Help > About).
-inline const wchar_t* FORK_VERSION = L"2.2";
+inline const wchar_t* FORK_VERSION = L"2.3";
 
 inline const wchar_t* DEFAULT_KEY     = L"JD_PRIVACY_TEST_KEY_CHANGE_ME";
 inline const wchar_t* DEFAULT_VERSION = L"v16_actual_video_safe_cycle";
@@ -434,6 +434,18 @@ inline std::wstring DecodeDisplayName(const std::wstring& name)
 	std::wstring dec = DecodeDisplayNameUncached(name);
 	cache.emplace(name, dec);
 	return dec;
+}
+
+// Decode a display string that may be a bare filename OR a full path.
+// Only the filename component is decoded - directory names are left alone,
+// otherwise the basename codec would mangle the folders too.
+inline std::wstring DecodeDisplayPathOrName(const std::wstring& s)
+{
+	const size_t sl = s.find_last_of(L"\\/");
+	if (sl == std::wstring::npos) {
+		return DecodeDisplayName(s);
+	}
+	return s.substr(0, sl + 1) + DecodeDisplayName(s.substr(sl + 1));
 }
 
 } // namespace JDPrivacy

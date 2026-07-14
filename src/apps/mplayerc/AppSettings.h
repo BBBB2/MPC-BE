@@ -588,6 +588,7 @@ public:
 	// JD Privacy fork
 	bool			bAudioStartMuted = true;
 	int				nPrivacyRevealSeconds = 3600;
+	bool			bPrivacyRevealDefault = false;
 	int				nBalance;
 	int				nLoops;
 	bool			fLoopForever;
