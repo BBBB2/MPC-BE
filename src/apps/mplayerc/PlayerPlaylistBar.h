@@ -100,6 +100,7 @@ public:
 	void CalcCountFiles();
 	INT_PTR GetCountInternal();
 	POSITION Shuffle();
+	POSITION GetRandomNextPos(); // JD Privacy fork: uniform random, not pool-order
 
 	// JD Privacy fork: session-only shuffle playback history (browser-style).
 	// Keyed by CPlaylistItem::m_id (stable across sorts). Never persisted.

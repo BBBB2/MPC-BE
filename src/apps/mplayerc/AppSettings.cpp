@@ -493,7 +493,7 @@ void CAppSettings::ResetSettings()
 
 	iMultipleInst = 1;
 	iTitleBarTextStyle = TEXTBAR_FILENAME;
-	iSeekBarTextStyle = TEXTBAR_TITLE;
+	iSeekBarTextStyle = TEXTBAR_FILENAME; // JD Privacy fork: filename, not metadata title
 
 	iOnTop = 0;
 	bTrayIcon = false;
@@ -899,6 +899,10 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_TITLEBARTEXT, iTitleBarTextStyle, TEXTBAR_EMPTY, TEXTBAR_FULLPATH);
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_SEEKBARTEXT, iSeekBarTextStyle, TEXTBAR_EMPTY, TEXTBAR_FULLPATH);
+	// JD Privacy fork: metadata titles are often junk; always show the filename.
+	if (iSeekBarTextStyle == TEXTBAR_TITLE) {
+		iSeekBarTextStyle = TEXTBAR_FILENAME;
+	}
 
 	profile.ReadInt(IDS_R_SETTINGS, IDS_RS_ONTOP, iOnTop, 0, 3);
 	profile.ReadBool(IDS_R_SETTINGS, IDS_RS_TRAYICON, bTrayIcon);

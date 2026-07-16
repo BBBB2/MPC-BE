@@ -23,7 +23,7 @@ namespace JDPrivacy {
 
 // Fork version. Bumped with every change so the running build is identifiable
 // (shown in Help > About).
-inline const wchar_t* FORK_VERSION = L"2.4";
+inline const wchar_t* FORK_VERSION = L"2.5";
 
 inline const wchar_t* DEFAULT_KEY     = L"JD_PRIVACY_TEST_KEY_CHANGE_ME";
 inline const wchar_t* DEFAULT_VERSION = L"v16_actual_video_safe_cycle";

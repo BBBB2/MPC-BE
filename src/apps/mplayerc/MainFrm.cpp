@@ -6112,7 +6112,18 @@ void CMainFrame::DropFiles(std::list<CString>& slFiles)
 		}
 		AddSimilarFiles(slFiles);
 
+		// JD Privacy fork: remember whether anything was playing before the drop.
+		const bool bWasIdle = (m_eMediaLoadState != MLS_LOADED);
+		const int nBefore = m_wndPlaylistBar.GetCount();
+
 		m_wndPlaylistBar.DropFiles(slFiles);
+
+		// Auto-play the first newly added item if we were idle. If something was
+		// already playing, just queue them (don't interrupt).
+		if (bWasIdle && m_wndPlaylistBar.GetCount() > nBefore) {
+			m_wndPlaylistBar.SetSelIdx(nBefore + 1, true);
+			OpenCurPlaylistItem();
+		}
 		return;
 	}
 
@@ -13570,14 +13581,12 @@ void CMainFrame::UpdateWindowTitle()
 	const int style = AfxGetAppSettings().iTitleBarTextStyle;
 	CString title = GetTextForBar(style);
 
+	// Keep the LCD/media title accurate for any remote display.
 	m_Lcd.SetMediaTitle(title);
 
-	if (style == TEXTBAR_EMPTY) {
-		title = s_strPlayerTitle;
-	} else {
-		title.Append(L" - ");
-		title.Append(s_strPlayerTitle);
-	}
+	// JD Privacy fork: the window title feeds the Windows taskbar, which would
+	// otherwise leak the filename. Force a fixed, privacy-safe title.
+	title = L"MPC-BE";
 
 	CString curTitle;
 	GetWindowTextW(curTitle);

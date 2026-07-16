@@ -853,6 +853,26 @@ void CPlaylist::AppendShuffleHistory(UINT id)
 	m_shuffleCursor = m_shuffleHistory.size() - 1;
 }
 
+// JD Privacy fork: pick a uniformly-random eligible item each call (excludes
+// the current item and directory entries). Unlike Shuffle(), this does not
+// walk a fixed pre-shuffled sequence, so repeated "new" Next picks are random.
+POSITION CPlaylist::GetRandomNextPos()
+{
+	std::vector<POSITION> pool;
+	pool.reserve(GetCount());
+	for (POSITION pos = GetHeadPosition(); pos; GetNext(pos)) {
+		if (pos != m_pos && !GetAt(pos).m_bDirectory) {
+			pool.emplace_back(pos);
+		}
+	}
+	if (pool.empty()) {
+		return m_pos ? m_pos : GetHeadPosition();
+	}
+	std::mt19937 rng((unsigned)GetTickCount64() ^ (unsigned)(uintptr_t)m_pos);
+	std::uniform_int_distribution<size_t> dist(0, pool.size() - 1);
+	return pool[dist(rng)];
+}
+
 CPlaylistItem& CPlaylist::GetNextWrap(POSITION& pos)
 {
 	if (AfxGetAppSettings().bShufflePlaylistItems && GetCountInternal() > 2) {
@@ -2655,15 +2675,21 @@ bool CPlayerPlaylistBar::SetNext()
 				return (fwd != org);
 			}
 		}
-		// At the newest entry: pick a fresh shuffled, validity-checked candidate.
-		POSITION pos = org ? org : curPlayList.GetHeadPosition();
-		POSITION start = pos;
-		for (;;) {
-			const auto& playlist = curPlayList.GetNextWrap(pos);
-			if ((playlist.MustBeSkipped() || playlist.m_bDirectory) && pos != start) {
-				continue;
+		// At the newest entry: pick a genuinely random new item. Retry a few
+		// times if the pick is skippable, then accept whatever we have.
+		POSITION pos = nullptr;
+		for (int attempt = 0; attempt < 16; attempt++) {
+			pos = curPlayList.GetRandomNextPos();
+			if (!pos) {
+				break;
 			}
-			break;
+			const auto& pli = curPlayList.GetAt(pos);
+			if (!pli.MustBeSkipped() && !pli.m_bDirectory) {
+				break;
+			}
+		}
+		if (!pos) {
+			return false;
 		}
 		curPlayList.SetPos(pos);
 		EnsureVisible(pos);
