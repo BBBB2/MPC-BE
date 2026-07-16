@@ -539,6 +539,7 @@ POSITION CPlaylist::Append(CPlaylistItem& item, const bool bParseDuration)
 
 bool CPlaylist::RemoveAll()
 {
+	ClearShuffleHistory(); // JD Privacy fork
 	__super::RemoveAll();
 	bool bWasPlaying = (m_pos != nullptr);
 	m_pos = nullptr;
@@ -547,6 +548,9 @@ bool CPlaylist::RemoveAll()
 
 bool CPlaylist::RemoveAt(POSITION pos)
 {
+	if (pos) {
+		PruneShuffleHistoryId(GetAt(pos).m_id); // JD Privacy fork
+	}
 	if (pos) {
 		__super::RemoveAt(pos);
 		if (m_pos == pos) {
@@ -723,27 +727,130 @@ POSITION CPlaylist::Shuffle()
 	const auto CountInternal = GetCountInternal();
 	ASSERT(CountInternal > 2);
 
-	static INT_PTR idx = 0;
-	static INT_PTR count = 0;
-	static std::vector<POSITION> a;
+	// JD Privacy fork: per-playlist candidate pool (was static locals, which
+	// shared state across playlist tabs).
 	const auto Count = m_pos ? CountInternal - 1 : CountInternal;
 
-	if (count != Count || idx >= Count) {
-		// insert or remove items in playlist, or index out of bounds then recalculate
-		a.clear();
-		idx = 0;
-		a.reserve(count = Count);
+	if (m_shuffleCandCount != Count || m_shuffleCandIdx >= Count) {
+		m_shuffleCandidates.clear();
+		m_shuffleCandIdx = 0;
+		m_shuffleCandidates.reserve(m_shuffleCandCount = Count);
 
 		for (POSITION pos = GetHeadPosition(); pos; GetNext(pos)) {
 			if (pos != m_pos && !GetAt(pos).m_bDirectory) {
-				a.emplace_back(pos);
+				m_shuffleCandidates.emplace_back(pos);
 			}
 		}
 
-		std::shuffle(a.begin(), a.end(), std::default_random_engine((unsigned)GetTickCount64()));
+		std::shuffle(m_shuffleCandidates.begin(), m_shuffleCandidates.end(),
+			std::default_random_engine((unsigned)GetTickCount64()));
 	}
 
-	return a[idx++];
+	if (m_shuffleCandidates.empty()) {
+		return m_pos ? m_pos : GetHeadPosition();
+	}
+	return m_shuffleCandidates[m_shuffleCandIdx++];
+}
+
+// --- JD Privacy fork: shuffle history helpers -----------------------------
+
+POSITION CPlaylist::FindPosByItemId(UINT id)
+{
+	for (POSITION pos = GetHeadPosition(); pos; GetNext(pos)) {
+		if (GetAt(pos).m_id == id) {
+			return pos;
+		}
+	}
+	return nullptr;
+}
+
+void CPlaylist::ClearShuffleHistory()
+{
+	m_shuffleHistory.clear();
+	m_shuffleCursor = 0;
+	m_shuffleCandidates.clear();
+	m_shuffleCandIdx = 0;
+	m_shuffleCandCount = 0;
+}
+
+void CPlaylist::PruneShuffleHistoryId(UINT id)
+{
+	for (size_t i = 0; i < m_shuffleHistory.size(); ) {
+		if (m_shuffleHistory[i] == id) {
+			m_shuffleHistory.erase(m_shuffleHistory.begin() + i);
+			if (m_shuffleCursor > i) {
+				m_shuffleCursor--;
+			}
+		} else {
+			i++;
+		}
+	}
+	if (!m_shuffleHistory.empty() && m_shuffleCursor >= m_shuffleHistory.size()) {
+		m_shuffleCursor = m_shuffleHistory.size() - 1;
+	} else if (m_shuffleHistory.empty()) {
+		m_shuffleCursor = 0;
+	}
+}
+
+void CPlaylist::SyncShuffleHistory(UINT curId)
+{
+	if (m_shuffleHistory.empty()) {
+		m_shuffleHistory.push_back(curId);
+		m_shuffleCursor = 0;
+		return;
+	}
+	if (m_shuffleHistory[m_shuffleCursor] == curId) {
+		return; // already aligned (internal nav set the cursor already)
+	}
+	// Genuinely new selection: discard forward branch, append as new head.
+	m_shuffleHistory.resize(m_shuffleCursor + 1);
+	m_shuffleHistory.push_back(curId);
+	m_shuffleCursor = m_shuffleHistory.size() - 1;
+}
+
+bool CPlaylist::HasForwardShuffleHistory() const
+{
+	return m_shuffleCursor + 1 < m_shuffleHistory.size();
+}
+
+POSITION CPlaylist::GetForwardShuffleHistoryPos()
+{
+	// Advance over stale (deleted) ids until a live one is found.
+	while (m_shuffleCursor + 1 < m_shuffleHistory.size()) {
+		const UINT id = m_shuffleHistory[m_shuffleCursor + 1];
+		POSITION pos = FindPosByItemId(id);
+		if (pos) {
+			m_shuffleCursor++;
+			return pos;
+		}
+		// stale: drop it and keep looking forward
+		m_shuffleHistory.erase(m_shuffleHistory.begin() + (m_shuffleCursor + 1));
+	}
+	return nullptr;
+}
+
+POSITION CPlaylist::GetPrevShuffleHistoryPos()
+{
+	// Retreat over stale ids until a live earlier one is found.
+	while (m_shuffleCursor > 0) {
+		const UINT id = m_shuffleHistory[m_shuffleCursor - 1];
+		POSITION pos = FindPosByItemId(id);
+		if (pos) {
+			m_shuffleCursor--;
+			return pos;
+		}
+		// stale: drop it, cursor shifts down with the erase
+		m_shuffleHistory.erase(m_shuffleHistory.begin() + (m_shuffleCursor - 1));
+		m_shuffleCursor--;
+	}
+	return nullptr;
+}
+
+void CPlaylist::AppendShuffleHistory(UINT id)
+{
+	m_shuffleHistory.resize(m_shuffleCursor + 1);
+	m_shuffleHistory.push_back(id);
+	m_shuffleCursor = m_shuffleHistory.size() - 1;
 }
 
 CPlaylistItem& CPlaylist::GetNextWrap(POSITION& pos)
@@ -2531,7 +2638,40 @@ CString CPlayerPlaylistBar::GetCurFileName()
 
 bool CPlayerPlaylistBar::SetNext()
 {
-	POSITION pos = curPlayList.GetPos(), org = pos;
+	POSITION org = curPlayList.GetPos();
+
+	// JD Privacy fork: history-aware forward navigation while shuffling.
+	if (AfxGetAppSettings().bShufflePlaylistItems && curPlayList.GetCountInternal() > 2) {
+		// Anchor history on the currently-playing item.
+		if (org) {
+			curPlayList.SyncShuffleHistory(curPlayList.GetAt(org).m_id);
+		}
+		// Walk forward through existing history first.
+		if (curPlayList.HasForwardShuffleHistory()) {
+			POSITION fwd = curPlayList.GetForwardShuffleHistoryPos();
+			if (fwd) {
+				curPlayList.SetPos(fwd);
+				EnsureVisible(fwd);
+				return (fwd != org);
+			}
+		}
+		// At the newest entry: pick a fresh shuffled, validity-checked candidate.
+		POSITION pos = org ? org : curPlayList.GetHeadPosition();
+		POSITION start = pos;
+		for (;;) {
+			const auto& playlist = curPlayList.GetNextWrap(pos);
+			if ((playlist.MustBeSkipped() || playlist.m_bDirectory) && pos != start) {
+				continue;
+			}
+			break;
+		}
+		curPlayList.SetPos(pos);
+		EnsureVisible(pos);
+		curPlayList.AppendShuffleHistory(curPlayList.GetAt(pos).m_id);
+		return (pos != org);
+	}
+
+	POSITION pos = org;
 	if (!pos) {
 		org = pos = curPlayList.GetHeadPosition();
 	}
@@ -2551,7 +2691,25 @@ bool CPlayerPlaylistBar::SetNext()
 
 bool CPlayerPlaylistBar::SetPrev()
 {
-	POSITION pos = curPlayList.GetPos(), org = pos;
+	POSITION org = curPlayList.GetPos();
+
+	// JD Privacy fork: while shuffling, Previous walks the real playback
+	// history rather than choosing a new random item.
+	if (AfxGetAppSettings().bShufflePlaylistItems && curPlayList.GetCountInternal() > 2) {
+		if (org) {
+			curPlayList.SyncShuffleHistory(curPlayList.GetAt(org).m_id);
+		}
+		POSITION prev = curPlayList.GetPrevShuffleHistoryPos();
+		if (prev) {
+			curPlayList.SetPos(prev);
+			EnsureVisible(prev);
+			return (prev != org);
+		}
+		// No earlier history: stay put (never fall back to random for Prev).
+		return false;
+	}
+
+	POSITION pos = org;
 	if (!pos) {
 		org = pos = curPlayList.GetHeadPosition();
 	}
@@ -2955,6 +3113,11 @@ void CPlayerPlaylistBar::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)
 			}
 			else {
 				curPlayList.SetPos(pos);
+				// JD Privacy fork: manual pick is a new navigation event -
+				// branch-replace forward history.
+				if (AfxGetAppSettings().bShufflePlaylistItems && pos) {
+					curPlayList.SyncShuffleHistory(curPlayList.GetAt(pos).m_id);
+				}
 			}
 
 			m_list.Invalidate();
@@ -2973,6 +3136,11 @@ void CPlayerPlaylistBar::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)
 			}
 			else {
 				curPlayList.SetPos(pos);
+				// JD Privacy fork: manual pick is a new navigation event -
+				// branch-replace forward history.
+				if (AfxGetAppSettings().bShufflePlaylistItems && pos) {
+					curPlayList.SyncShuffleHistory(curPlayList.GetAt(pos).m_id);
+				}
 			}
 
 			m_list.Invalidate();
@@ -4034,6 +4202,11 @@ void CPlayerPlaylistBar::OnContextMenu(CWnd* /*pWnd*/, CPoint p)
 		break;
 		case M_SHUFFLE:
 			s.bShufflePlaylistItems = !s.bShufflePlaylistItems;
+		if (!s.bShufflePlaylistItems) {
+			// JD Privacy fork: leaving shuffle clears history so re-enabling
+			// starts fresh from the current item.
+			curPlayList.ClearShuffleHistory();
+		}
 			break;
 		case M_REFRESH:
 			if (curTab.type == PL_EXPLORER) {

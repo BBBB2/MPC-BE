@@ -9692,6 +9692,14 @@ void CMainFrame::OnNavigateSkip(UINT nID)
 		}
 
 		if (nID == ID_NAVIGATE_SKIPBACK) {
+			// JD Privacy fork: Spotify-style Previous. If more than 5 seconds
+			// into the current item, restart it instead of navigating back.
+			// (Applies whether or not shuffle is on.)
+			REFERENCE_TIME rtNow = 0;
+			if (m_pMS && SUCCEEDED(m_pMS->GetCurrentPosition(&rtNow)) && rtNow > 50000000) {
+				SeekTo(0, false);
+				return;
+			}
 			SendMessageW(WM_COMMAND, ID_NAVIGATE_SKIPBACKFILE);
 		} else if (nID == ID_NAVIGATE_SKIPFORWARD) {
 			SendMessageW(WM_COMMAND, ID_NAVIGATE_SKIPFORWARDFILE);

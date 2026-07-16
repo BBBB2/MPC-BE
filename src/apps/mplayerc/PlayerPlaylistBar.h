@@ -101,6 +101,28 @@ public:
 	INT_PTR GetCountInternal();
 	POSITION Shuffle();
 
+	// JD Privacy fork: session-only shuffle playback history (browser-style).
+	// Keyed by CPlaylistItem::m_id (stable across sorts). Never persisted.
+	std::vector<UINT> m_shuffleHistory;
+	size_t            m_shuffleCursor = 0;
+	// Per-playlist shuffle candidate pool (replaces the old static locals in
+	// Shuffle(), which leaked state across playlist tabs).
+	std::vector<POSITION> m_shuffleCandidates;
+	INT_PTR               m_shuffleCandIdx = 0;
+	INT_PTR               m_shuffleCandCount = 0;
+
+	POSITION FindPosByItemId(UINT id);
+	void     ClearShuffleHistory();
+	void     PruneShuffleHistoryId(UINT id);
+	// Ensure the currently-playing id is the cursor entry. If curId is not the
+	// cursor entry, this is a genuinely new selection: discard any forward
+	// branch and append curId as the new head.
+	void     SyncShuffleHistory(UINT curId);
+	bool     HasForwardShuffleHistory() const;
+	POSITION GetForwardShuffleHistoryPos();   // advances cursor, returns pos or nullptr
+	POSITION GetPrevShuffleHistoryPos();      // retreats cursor, returns pos or nullptr
+	void     AppendShuffleHistory(UINT id);   // append new item as head
+
 	INT_PTR m_nFilesCount = -1;
 
 	int m_nSelected_idx = INT_MAX;
