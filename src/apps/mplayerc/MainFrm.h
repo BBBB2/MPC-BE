@@ -395,7 +395,8 @@ public:
 		TIMER_FLYBARWINDOWHIDER,
 		TIMER_DM_AUTOCHANGING,
 		TIMER_PAUSE,
-		TIMER_MOUSE_LEFT_LONGPRESS_SPEED
+		TIMER_MOUSE_LEFT_LONGPRESS_SPEED,
+		TIMER_PRIVACY_BLACKOUT // JD Privacy fork
 	};
 
 	void SetColorMenu();
@@ -466,6 +467,11 @@ public:
 
 	void UpdateWindowTitle();
 	void RefreshPrivacyBars(); // JD Privacy fork: repaint title + seek bar
+	// JD Privacy fork: pause-blackout state.
+	bool m_bPrivacyBlackout = false;
+	bool m_bPrivacyRevealBeforeBlackout = false;
+	void EnterPrivacyBlackout();
+	void ExitPrivacyBlackout();
 
 private:
 	void SetDispMode(const dispmode& dm, const CString& DisplayName, const BOOL bForceRegistryMode = FALSE);

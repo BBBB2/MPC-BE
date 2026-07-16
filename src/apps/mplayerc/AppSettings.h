@@ -589,6 +589,7 @@ public:
 	bool			bAudioStartMuted = true;
 	int				nPrivacyRevealSeconds = 3600;
 	bool			bPrivacyRevealDefault = false;
+	int				nPrivacyPauseBlackoutMinutes = 20; // 0 = disabled
 	int				nBalance;
 	int				nLoops;
 	bool			fLoopForever;

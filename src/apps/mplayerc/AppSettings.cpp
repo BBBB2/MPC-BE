@@ -1035,6 +1035,7 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	}
 	profile.ReadInt(IDS_R_SETTINGS, L"PrivacyRevealSeconds", nPrivacyRevealSeconds, 10, 86400);
 	profile.ReadBool(IDS_R_SETTINGS, L"PrivacyRevealDefault", bPrivacyRevealDefault);
+	profile.ReadInt(IDS_R_SETTINGS, L"PrivacyPauseBlackoutMinutes", nPrivacyPauseBlackoutMinutes, 0, 1440);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.ReadBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);
@@ -1724,6 +1725,7 @@ void CAppSettings::SaveSettings()
 	profile.WriteBool(IDS_R_AUDIO, L"StartMuted", bAudioStartMuted);
 	profile.WriteInt(IDS_R_SETTINGS, L"PrivacyRevealSeconds", nPrivacyRevealSeconds);
 	profile.WriteBool(IDS_R_SETTINGS, L"PrivacyRevealDefault", bPrivacyRevealDefault);
+	profile.WriteInt(IDS_R_SETTINGS, L"PrivacyPauseBlackoutMinutes", nPrivacyPauseBlackoutMinutes);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.WriteBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);

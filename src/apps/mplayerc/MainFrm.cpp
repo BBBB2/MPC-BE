@@ -3063,6 +3063,11 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 			OnPlayPlay();
 		}
 		break;
+		case TIMER_PRIVACY_BLACKOUT: {
+			KillTimer(TIMER_PRIVACY_BLACKOUT);
+			EnterPrivacyBlackout();
+			break;
+		}
 		case TIMER_PAUSE: {
 			KillTimer(TIMER_PAUSE);
 			SaveHistory();
@@ -18095,6 +18100,48 @@ void CMainFrame::SetLoadState(MPC_LOADSTATE iState)
 	}
 }
 
+void CMainFrame::EnterPrivacyBlackout()
+{
+	if (m_bPrivacyBlackout || m_eMediaLoadState != MLS_LOADED) {
+		return;
+	}
+	m_bPrivacyBlackout = true;
+
+	// Remember the reveal state so Play can restore it, then force re-mask.
+	m_bPrivacyRevealBeforeBlackout = m_wndPlaylistBar.m_bPrivacyRevealed;
+	if (m_wndPlaylistBar.m_bPrivacyRevealed) {
+		m_wndPlaylistBar.m_bPrivacyRevealed = false;
+		m_wndPlaylistBar.Invalidate();
+		RefreshPrivacyBars();
+	}
+
+	// Black the video: hide the renderer output; the child-view background is
+	// black, so the window goes solid black regardless of renderer.
+	HideVideoWindow(true);
+	m_wndView.Invalidate();
+}
+
+void CMainFrame::ExitPrivacyBlackout()
+{
+	if (!m_bPrivacyBlackout) {
+		return;
+	}
+	m_bPrivacyBlackout = false;
+
+	// Restore the video output.
+	HideVideoWindow(false);
+	MoveVideoWindow();
+	m_wndView.Invalidate();
+
+	// Restore the pre-blackout reveal state.
+	if (m_bPrivacyRevealBeforeBlackout && !m_wndPlaylistBar.m_bPrivacyRevealed) {
+		m_wndPlaylistBar.m_bPrivacyRevealed = true;
+		m_wndPlaylistBar.Invalidate();
+		RefreshPrivacyBars();
+	}
+	m_bPrivacyRevealBeforeBlackout = false;
+}
+
 void CMainFrame::SetPlayState(MPC_PLAYSTATE iState)
 {
 	m_Lcd.SetPlayState((CMPC_Lcd::PlayState)iState);
@@ -18123,8 +18170,19 @@ void CMainFrame::SetPlayState(MPC_PLAYSTATE iState)
 				SetTimer(TIMER_PAUSE, 5000, nullptr);
 			}
 		}
+		// JD Privacy fork: arm the pause-blackout timer (0 = disabled).
+		if (s.nPrivacyPauseBlackoutMinutes > 0 && !m_bPrivacyBlackout) {
+			SetTimer(TIMER_PRIVACY_BLACKOUT,
+				(UINT)s.nPrivacyPauseBlackoutMinutes * 60u * 1000u, nullptr);
+		}
 	} else {
 		KillTimer(TIMER_PAUSE);
+		// JD Privacy fork: leaving pause cancels the pending blackout, and if we
+		// are already blacked out, restore on play.
+		KillTimer(TIMER_PRIVACY_BLACKOUT);
+		if (iState == PS_PLAY && m_bPrivacyBlackout) {
+			ExitPrivacyBlackout();
+		}
 	}
 }
 
