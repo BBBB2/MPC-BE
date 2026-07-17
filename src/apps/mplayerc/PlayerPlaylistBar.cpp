@@ -246,6 +246,11 @@ CPlaylistItem& CPlaylistItem::operator = (const CPlaylistItem& pli)
 		m_bInvalid   = pli.m_bInvalid;
 		m_bDirectory = pli.m_bDirectory;
 		m_duration   = pli.m_duration;
+		m_vheight    = pli.m_vheight;
+		m_fps        = pli.m_fps;
+		m_filesize   = pli.m_filesize;
+		m_modtime    = pli.m_modtime;
+		m_bMetaLoaded= pli.m_bMetaLoaded;
 		m_vinput     = pli.m_vinput;
 		m_vchannel   = pli.m_vchannel;
 		m_ainput     = pli.m_ainput;
@@ -518,23 +523,94 @@ void CPlaylistItem::AutoLoadFiles()
 
 POSITION CPlaylist::Append(CPlaylistItem& item, const bool bParseDuration)
 {
-	if (bParseDuration && !item.m_duration && item.m_fi.Valid()) {
-		const auto& fn = item.m_fi.GetPath();
-		if (!::PathIsURLW(item.m_fi) && ::PathFileExistsW(item.m_fi)) {
-			MediaInfoLib::MediaInfo MI;
-			MI.Option(L"ParseSpeed", L"0");
-			if (MI.Open(fn.GetString())) {
-				using namespace MediaInfoLib;
+	// JD Privacy fork: cheap directory metadata (size + modified time), no file open.
+	if (!item.m_bMetaLoaded && item.m_fi.Valid()
+			&& !::PathIsURLW(item.m_fi) && ::PathFileExistsW(item.m_fi)) {
+		WIN32_FILE_ATTRIBUTE_DATA fad = {};
+		if (::GetFileAttributesExW(item.m_fi.GetPath().GetString(), GetFileExInfoStandard, &fad)) {
+			item.m_filesize = ((unsigned __int64)fad.nFileSizeHigh << 32) | fad.nFileSizeLow;
+			item.m_modtime  = ((__int64)fad.ftLastWriteTime.dwHighDateTime << 32) | fad.ftLastWriteTime.dwLowDateTime;
+		}
+	}
 
+	const auto& s = AfxGetAppSettings();
+	const bool bWantVideoMeta = s.bPlaylistColRes || s.bPlaylistColFps;
+
+	if (bParseDuration && item.m_fi.Valid()
+			&& !::PathIsURLW(item.m_fi) && ::PathFileExistsW(item.m_fi)
+			&& (!item.m_duration || (bWantVideoMeta && !item.m_bMetaLoaded))) {
+		const auto& fn = item.m_fi.GetPath();
+		MediaInfoLib::MediaInfo MI;
+		MI.Option(L"ParseSpeed", L"0");
+		if (MI.Open(fn.GetString())) {
+			using namespace MediaInfoLib;
+
+			if (!item.m_duration) {
 				String duration = MI.Get(Stream_General, 0, L"Duration", Info_Text, Info_Name);
 				if (!duration.empty() && StrToInt64(duration.c_str(), item.m_duration)) {
 					item.m_duration *= 10000LL;
 				}
 			}
+			if (bWantVideoMeta) {
+				String h = MI.Get(Stream_Video, 0, L"Height", Info_Text, Info_Name);
+				if (!h.empty()) {
+					item.m_vheight = _wtoi(h.c_str());
+				}
+				String fr = MI.Get(Stream_Video, 0, L"FrameRate", Info_Text, Info_Name);
+				if (fr.empty() || _wtof(fr.c_str()) > 200.0) {
+					fr = MI.Get(Stream_Video, 0, L"FrameRate_Original", Info_Text, Info_Name);
+				}
+				if (!fr.empty()) {
+					item.m_fps = _wtof(fr.c_str());
+				}
+			}
 		}
 	}
 
+	item.m_bMetaLoaded = true;
 	return AddTail(item);
+}
+
+// --- JD Privacy fork: playlist-column value formatters --------------------
+CString CPlaylistItem::GetColRes() const
+{
+	if (m_vheight <= 0) { return L""; }
+	CString s; s.Format(L"%dp", m_vheight);
+	return s;
+}
+CString CPlaylistItem::GetColFps() const
+{
+	if (m_fps <= 0.0) { return L""; }
+	CString s; s.Format(L"%.0ffps", m_fps);
+	return s;
+}
+CString CPlaylistItem::GetColType() const
+{
+	if (!m_fi.Valid()) { return L""; }
+	const std::wstring t = JDPrivacy::RealTypeUpper(m_fi.GetPath().GetString());
+	return CString(t.c_str());
+}
+CString CPlaylistItem::GetColSize() const
+{
+	if (!m_filesize) { return L""; }
+	double gb = (double)m_filesize / (1024.0 * 1024.0 * 1024.0);
+	double r = std::round(gb * 10.0) / 10.0;
+	if (r < 0.1) { return L""; }
+	CString s; s.Format(L"%.1fGB", r);
+	return s;
+}
+CString CPlaylistItem::GetColDate() const
+{
+	if (!m_modtime) { return L""; }
+	FILETIME ft;
+	ft.dwHighDateTime = (DWORD)(m_modtime >> 32);
+	ft.dwLowDateTime  = (DWORD)(m_modtime & 0xFFFFFFFF);
+	SYSTEMTIME stUTC, stLocal;
+	if (!::FileTimeToSystemTime(&ft, &stUTC)) { return L""; }
+	if (!::SystemTimeToTzSpecificLocalTime(nullptr, &stUTC, &stLocal)) { stLocal = stUTC; }
+	CString s;
+	s.Format(L"%02d/%02d/%02d", stLocal.wDay, stLocal.wMonth, stLocal.wYear % 100);
+	return s;
 }
 
 bool CPlaylist::RemoveAll()
@@ -3291,6 +3367,33 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 			pDC->DrawTextW(time, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 			rcText.right -= (timesize.cx + 6);
+		}
+	}
+
+	// JD Privacy fork: draw enabled metadata columns as fixed-width slices carved
+	// from the right (normal playlist only). Values are read straight from the
+	// cached item fields - there are no native ListView columns for these, so no
+	// horizontal scrollbar and long names simply crop.
+	if (GetCurTab().type != PL_EXPLORER) {
+		const CAppSettings& cs = AfxGetAppSettings();
+		struct MetaCol { bool on; int w; CString val; };
+		const MetaCol cols[] = {
+			{ cs.bPlaylistColDate, m_pMainFrame->ScaleX(cs.nPlaylistColDateWidth), pli.GetColDate() },
+			{ cs.bPlaylistColSize, m_pMainFrame->ScaleX(cs.nPlaylistColSizeWidth), pli.GetColSize() },
+			{ cs.bPlaylistColType, m_pMainFrame->ScaleX(cs.nPlaylistColTypeWidth), pli.GetColType() },
+			{ cs.bPlaylistColFps,  m_pMainFrame->ScaleX(cs.nPlaylistColFpsWidth),  pli.GetColFps()  },
+			{ cs.bPlaylistColRes,  m_pMainFrame->ScaleX(cs.nPlaylistColResWidth),  pli.GetColRes()  },
+		};
+		for (const auto& c : cols) {
+			if (!c.on) { continue; }
+			// Keep at least ~40px for the Name column; stop carving otherwise.
+			if (c.w + 6 >= rcText.Width() - m_pMainFrame->ScaleX(40)) { break; }
+			CRect rc(rcText);
+			rc.left = rc.right - c.w;
+			if (c.val.GetLength()) {
+				pDC->DrawTextW(c.val, &rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+			}
+			rcText.right -= c.w;
 		}
 	}
 

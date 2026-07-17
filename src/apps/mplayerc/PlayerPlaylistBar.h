@@ -44,6 +44,12 @@ public:
 		device
 	} m_type = file;
 	REFERENCE_TIME m_duration = 0;
+	// JD Privacy fork: cached playlist-column metadata (filled at add-time).
+	int      m_vheight   = 0;
+	double   m_fps       = 0.0;
+	unsigned __int64 m_filesize = 0;
+	__int64  m_modtime   = 0;
+	bool     m_bMetaLoaded = false;
 	int m_vinput   = -1;
 	int m_vchannel = -1;
 	int m_ainput   = -1;
@@ -63,6 +69,12 @@ public:
 	void AutoLoadFiles();
 
 	CString GetLabel(int i = 0) const;
+	// JD Privacy fork: playlist metadata column values (empty when unknown)
+	CString GetColRes()  const;
+	CString GetColFps()  const;
+	CString GetColType() const;
+	CString GetColSize() const;
+	CString GetColDate() const;
 
 	const bool MustBeSkipped() const {
 		if (m_bInvalid) {

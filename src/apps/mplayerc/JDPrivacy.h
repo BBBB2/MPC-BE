@@ -23,7 +23,7 @@ namespace JDPrivacy {
 
 // Fork version. Bumped with every change so the running build is identifiable
 // (shown in Help > About).
-inline const wchar_t* FORK_VERSION = L"2.6";
+inline const wchar_t* FORK_VERSION = L"2.8";
 
 inline const wchar_t* DEFAULT_KEY     = L"JD_PRIVACY_TEST_KEY_CHANGE_ME";
 inline const wchar_t* DEFAULT_VERSION = L"v16_actual_video_safe_cycle";
@@ -446,6 +446,25 @@ inline std::wstring DecodeDisplayPathOrName(const std::wstring& s)
 		return DecodeDisplayName(s);
 	}
 	return s.substr(0, sl + 1) + DecodeDisplayName(s.substr(sl + 1));
+}
+
+// Real (decoded) uppercase extension for the Type column.
+inline std::wstring RealTypeUpper(const std::wstring& fileName)
+{
+	std::wstring ext;
+	const std::wstring logical = GetLogicalExtension(fileName);
+	if (!logical.empty()) {
+		ext = logical;
+	} else {
+		const size_t dot = fileName.find_last_of(L'.');
+		if (dot != std::wstring::npos && dot + 1 < fileName.size()) {
+			ext = fileName.substr(dot + 1);
+		}
+	}
+	for (auto& c : ext) {
+		if (c >= L'a' && c <= L'z') { c -= 32; }
+	}
+	return ext;
 }
 
 } // namespace JDPrivacy

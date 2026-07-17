@@ -590,6 +590,17 @@ public:
 	int				nPrivacyRevealSeconds = 3600;
 	bool			bPrivacyRevealDefault = false;
 	int				nPrivacyPauseBlackoutMinutes = 20; // 0 = disabled
+	// JD Privacy fork: playlist metadata columns (each independently toggleable).
+	bool			bPlaylistColRes  = false;
+	bool			bPlaylistColFps  = false;
+	bool			bPlaylistColType = false;
+	bool			bPlaylistColSize = false;
+	bool			bPlaylistColDate = false;
+	int				nPlaylistColResWidth  = 55;
+	int				nPlaylistColFpsWidth  = 50;
+	int				nPlaylistColTypeWidth = 50;
+	int				nPlaylistColSizeWidth = 60;
+	int				nPlaylistColDateWidth = 70;
 	int				nBalance;
 	int				nLoops;
 	bool			fLoopForever;
