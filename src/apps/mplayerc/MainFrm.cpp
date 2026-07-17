@@ -1551,8 +1551,15 @@ LPCWSTR CMainFrame::GetTextForBar(int style)
 	// JD Privacy fork: show decoded names in the title bar and seek bar while
 	// revealed. Display only - the file on disk is untouched. The returned
 	// pointer must outlive the call, hence the member buffer.
-	if (m_wndPlaylistBar.m_bPrivacyRevealed && *text) {
-		m_strPrivacyBarText = JDPrivacy::DecodeDisplayPathOrName(text).c_str();
+	if (*text) {
+		// JD Privacy fork: reveal shows the real name, masked shows the scrambled
+		// name - regardless of the on-disk state. Only the filename part is
+		// transformed; any directory prefix is left alone.
+		const std::wstring sw = text;
+		const size_t sl = sw.find_last_of(L"\\/");
+		const std::wstring dir  = (sl == std::wstring::npos) ? L"" : sw.substr(0, sl + 1);
+		const std::wstring name = (sl == std::wstring::npos) ? sw : sw.substr(sl + 1);
+		m_strPrivacyBarText = (dir + JDPrivacy::DisplayNameForState(name, m_wndPlaylistBar.m_bPrivacyRevealed)).c_str();
 		return m_strPrivacyBarText.GetString();
 	}
 

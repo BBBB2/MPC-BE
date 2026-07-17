@@ -3400,9 +3400,7 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 	CString fmt, file;
 	fmt.Format(L"%%0%dd. %%s", (int)log10(0.1 + curPlayList.GetCount()) + 1);
 	CString itemName = m_list.GetItemText(nItem, COL_NAME);
-	if (m_bPrivacyRevealed) {
-		itemName = JDPrivacy::DecodeDisplayName((LPCWSTR)itemName).c_str();
-	}
+	itemName = JDPrivacy::DisplayNameForState((LPCWSTR)itemName, m_bPrivacyRevealed).c_str();
 	file.Format(fmt, nItem + 1, itemName);
 
 	int offset = 0;
@@ -3421,9 +3419,7 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 			bfsFolder = true;
 		}
 
-		if (m_bPrivacyRevealed) {
-			file = JDPrivacy::DecodeDisplayName((LPCWSTR)file).c_str();
-		}
+		file = JDPrivacy::DisplayNameForState((LPCWSTR)file, m_bPrivacyRevealed).c_str();
 
 		HICON hIcon = nullptr;
 		if (bfsFolder) { // draw Folder Icon

@@ -23,7 +23,7 @@ namespace JDPrivacy {
 
 // Fork version. Bumped with every change so the running build is identifiable
 // (shown in Help > About).
-inline const wchar_t* FORK_VERSION = L"2.8";
+inline const wchar_t* FORK_VERSION = L"2.9";
 
 inline const wchar_t* DEFAULT_KEY     = L"JD_PRIVACY_TEST_KEY_CHANGE_ME";
 inline const wchar_t* DEFAULT_VERSION = L"v16_actual_video_safe_cycle";
@@ -374,6 +374,18 @@ inline std::wstring DecodeMediaExt(const std::wstring& encLower, bool* pIsSubtit
 	return {};
 }
 
+// Encode a real extension (no dot) to its marked form, empty if unknown.
+inline std::wstring EncodeMediaExt(const std::wstring& decLower)
+{
+	for (const auto& p : VideoExtMap()) {
+		if (decLower == p.dec) { return p.enc; }
+	}
+	for (const auto& p : SubExtMap()) {
+		if (decLower == p.dec) { return p.enc; }
+	}
+	return {};
+}
+
 // True if the filename (no path) is a JD Privacy marked media file:
 // stem ends with the marker and the final extension is in the encoded maps.
 inline bool IsPrivacyMarkedMedia(const std::wstring& fileName)
@@ -421,6 +433,29 @@ inline std::wstring DecodeDisplayNameUncached(const std::wstring& name)
 	return out + rest;
 }
 
+// Display ENCODE for playlist labels etc. Mirror of DecodeDisplayName:
+// scramble the stem with the basename codec (decode=false) and map the real
+// extension to its marked form. A name that is already marked, or whose
+// extension is not in the allow-list, is returned unchanged.
+inline std::wstring EncodeDisplayName(const std::wstring& name)
+{
+	// Already marked? leave as-is (don't double-encode).
+	if (name.find_last_of(MARKER) != std::wstring::npos) {
+		return name;
+	}
+	const size_t dot = name.find_last_of(L'.');
+	if (dot == std::wstring::npos || dot == 0 || dot + 1 >= name.size()) {
+		return name;
+	}
+	const std::wstring stem = name.substr(0, dot);
+	const std::wstring ext  = LowerAscii(name.substr(dot + 1));
+	const std::wstring enc  = EncodeMediaExt(ext);
+	if (enc.empty()) {
+		return name; // not an allow-list media extension; leave unchanged
+	}
+	return TransformText(stem, false) + MARKER + L"." + enc;
+}
+
 inline std::wstring DecodeDisplayName(const std::wstring& name)
 {
 	static std::unordered_map<std::wstring, std::wstring> cache; // UI thread only
@@ -434,6 +469,19 @@ inline std::wstring DecodeDisplayName(const std::wstring& name)
 	std::wstring dec = DecodeDisplayNameUncached(name);
 	cache.emplace(name, dec);
 	return dec;
+}
+
+// JD Privacy fork: the display name for a given reveal state, independent of
+// whether the on-disk name is currently scrambled.
+//   bReveal == true  -> show the REAL name  (decode if marked, else as-is)
+//   bReveal == false -> show the SCRAMBLED name (encode if unmarked, else as-is)
+inline std::wstring DisplayNameForState(const std::wstring& name, bool bReveal)
+{
+	const bool marked = (name.find_last_of(MARKER) != std::wstring::npos);
+	if (bReveal) {
+		return marked ? DecodeDisplayName(name) : name;
+	}
+	return marked ? name : EncodeDisplayName(name);
 }
 
 // Decode a display string that may be a bare filename OR a full path.
