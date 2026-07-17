@@ -153,7 +153,9 @@ class CPlayerPlaylistBar : public CPlayerBar
 	DECLARE_DYNAMIC(CPlayerPlaylistBar)
 
 private:
-	enum {COL_NAME, COL_TIME};
+	// JD Privacy fork: logical column ids. COL_NAME stays 0; COL_TIME kept as a
+	// distinct logical id (its VISIBLE index is resolved via VisibleIndexOf).
+	enum {COL_NAME, COL_RES, COL_FPS, COL_TYPE, COL_SIZE, COL_DATE, COL_TIME};
 
 	CMainFrame* m_pMainFrame = nullptr;
 
@@ -162,6 +164,12 @@ private:
 
 	int m_nTimeColWidth = 0;
 	void ResizeListColumn();
+	// JD Privacy fork: real columns
+	std::vector<int> m_visibleColumns; // visible index -> logical COL_ id
+	void RebuildPlaylistColumns();
+	int  VisibleIndexOf(int logical) const;
+	void SavePlaylistColumnWidths();
+	afx_msg void OnHdnEndTrack(NMHDR* pNMHDR, LRESULT* pResult);
 
 	void AddItem(std::list<CString>& fns, CSubtitleItemList* subs);
 	void ParsePlayList(CString fn, CSubtitleItemList* subs, bool bCheck = true);

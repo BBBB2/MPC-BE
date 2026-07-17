@@ -1020,14 +1020,12 @@ BOOL CPlayerPlaylistBar::Create(CWnd* pParentWnd, UINT defDockBarID)
 		0, //less margins//WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE,
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_TABSTOP
 		| LVS_OWNERDRAWFIXED
-		| LVS_NOCOLUMNHEADER
 		| LVS_EDITLABELS
 		| LVS_REPORT | LVS_AUTOARRANGE | LVS_NOSORTHEADER,
 		CRect(0, 0, 100, 100), this, IDC_PLAYLIST);
 
 	m_list.SetExtendedStyle(m_list.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
-	m_list.InsertColumn(COL_NAME, L"Name", LVCFMT_LEFT);
-	m_list.InsertColumn(COL_TIME, L"Time", LVCFMT_RIGHT);
+	RebuildPlaylistColumns();
 
 	m_REdit.Create(WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_TABSTOP, CRect(10, 10, 100, 10), this, IDC_FINDINPLAYLIST);
 	if (AfxGetAppSettings().bUseDarkTheme) {
@@ -2618,7 +2616,7 @@ void CPlayerPlaylistBar::SetupList()
 		DWORD_PTR dwData = (DWORD_PTR)pos;
 		CPlaylistItem& pli = PlayList.GetNext(pos);
 		m_list.SetItemData(m_list.InsertItem(i, pli.GetLabel(0)), dwData);
-		m_list.SetItemText(i, COL_TIME, pli.GetLabel(1));
+		{ const int viT = VisibleIndexOf(COL_TIME); if (viT >= 0) m_list.SetItemText(i, viT, pli.GetLabel(1)); }
 	}
 }
 
@@ -2631,8 +2629,8 @@ void CPlayerPlaylistBar::UpdateList()
 		DWORD_PTR dwData = (DWORD_PTR)pos;
 		CPlaylistItem& pli = PlayList.GetNext(pos);
 		m_list.SetItemData(i, dwData);
-		m_list.SetItemText(i, COL_NAME, pli.GetLabel(0));
-		m_list.SetItemText(i, COL_TIME, pli.GetLabel(1));
+		m_list.SetItemText(i, 0, pli.GetLabel(0));
+		{ const int viT = VisibleIndexOf(COL_TIME); if (viT >= 0) m_list.SetItemText(i, viT, pli.GetLabel(1)); }
 	}
 }
 
@@ -2889,7 +2887,7 @@ void CPlayerPlaylistBar::SetCurValid(const bool bValid)
 					auto index = FindItem(pos);
 					if (index >= 0) {
 						m_list.SetItemText(index, COL_NAME, pli.GetLabel(0));
-						m_list.SetItemText(index, COL_TIME, pli.GetLabel(1));
+						{ const int viT = VisibleIndexOf(COL_TIME); if (viT >= 0) m_list.SetItemText(index, viT, pli.GetLabel(1)); }
 					}
 				}
 			}
@@ -2939,7 +2937,7 @@ void CPlayerPlaylistBar::SetCurTime(REFERENCE_TIME rt)
 				if (i == m_nCurPlayListIndex) {
 					auto index = FindItem(pos);
 					if (index >= 0) {
-						m_list.SetItemText(index, COL_TIME, pli.GetLabel(1));
+						{ const int viT = VisibleIndexOf(COL_TIME); if (viT >= 0) m_list.SetItemText(index, viT, pli.GetLabel(1)); }
 					}
 				}
 			}
@@ -3088,6 +3086,7 @@ BEGIN_MESSAGE_MAP(CPlayerPlaylistBar, CSizingControlBarG)
 	ON_NOTIFY(LVN_KEYDOWN, IDC_PLAYLIST, OnLvnKeyDown)
 	ON_NOTIFY(NM_DBLCLK, IDC_PLAYLIST, OnNMDblclkList)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_PLAYLIST, OnCustomdrawList)
+	ON_NOTIFY(HDN_ENDTRACKW, 0, OnHdnEndTrack)
 	ON_WM_DRAWITEM()
 	ON_COMMAND_EX(ID_PLAY_PLAY, OnPlayPlay)
 	ON_NOTIFY(LVN_BEGINDRAG, IDC_PLAYLIST, OnBeginDrag)
@@ -3124,7 +3123,19 @@ void CPlayerPlaylistBar::ResizeListColumn()
 		m_list.SetRedraw(FALSE);
 		m_list.MoveWindow(r);
 		m_list.GetClientRect(&r);
-		m_list.SetColumnWidth(COL_NAME, r.Width() - m_nTimeColWidth);
+		// JD Privacy fork: Filename (visible index 0) absorbs the width left over
+		// after Time and all enabled meta columns, unless the user has set a
+		// specific Name width (then leave columns as-is and allow h-scroll).
+		if (s.nPlaylistColNameWidth <= 0 && !m_visibleColumns.empty()) {
+			int used = 0;
+			for (size_t i = 1; i < m_visibleColumns.size(); ++i) {
+				used += m_list.GetColumnWidth((int)i);
+			}
+			const int nameW = r.Width() - used;
+			if (nameW > m_pMainFrame->ScaleX(60)) {
+				m_list.SetColumnWidth(0, nameW);
+			}
+		}
 		m_list.SetRedraw();
 
 		if (s.bUseDarkTheme) {
@@ -3286,6 +3297,90 @@ void CPlayerPlaylistBar::OnCustomdrawList(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
+// JD Privacy fork: (re)build native playlist columns from the enabled set.
+// Filename always present; Time always present (rightmost). Metadata columns
+// appear between them, in fixed logical order, only when enabled.
+void CPlayerPlaylistBar::RebuildPlaylistColumns()
+{
+	if (!IsWindow(m_list.m_hWnd)) {
+		return;
+	}
+	const CAppSettings& s = AfxGetAppSettings();
+
+	// Remove existing columns (right to left).
+	int nCols = m_list.GetHeaderCtrl() ? m_list.GetHeaderCtrl()->GetItemCount() : 0;
+	for (int i = nCols - 1; i >= 0; --i) {
+		m_list.DeleteColumn(i);
+	}
+
+	m_visibleColumns.clear();
+
+	int idx = 0;
+	m_list.InsertColumn(idx, L"Filename", LVCFMT_LEFT,
+		s.nPlaylistColNameWidth > 0 ? m_pMainFrame->ScaleX(s.nPlaylistColNameWidth) : m_pMainFrame->ScaleX(240));
+	m_visibleColumns.push_back(COL_NAME);
+	idx++;
+
+	struct MetaDef { bool on; int logical; const wchar_t* head; int w; };
+	const MetaDef defs[] = {
+		{ s.bPlaylistColRes,  COL_RES,  L"Resolution", s.nPlaylistColResWidth },
+		{ s.bPlaylistColFps,  COL_FPS,  L"Frame Rate", s.nPlaylistColFpsWidth },
+		{ s.bPlaylistColType, COL_TYPE, L"Type",       s.nPlaylistColTypeWidth },
+		{ s.bPlaylistColSize, COL_SIZE, L"Size",       s.nPlaylistColSizeWidth },
+		{ s.bPlaylistColDate, COL_DATE, L"Date",       s.nPlaylistColDateWidth },
+	};
+	for (const auto& d : defs) {
+		if (!d.on) { continue; }
+		m_list.InsertColumn(idx, d.head, LVCFMT_CENTER, m_pMainFrame->ScaleX(d.w));
+		m_visibleColumns.push_back(d.logical);
+		idx++;
+	}
+
+	m_list.InsertColumn(idx, L"Length", LVCFMT_CENTER, m_nTimeColWidth > 0 ? m_nTimeColWidth : m_pMainFrame->ScaleX(80));
+	m_visibleColumns.push_back(COL_TIME);
+
+	ResizeListColumn();
+}
+
+// Visible index for a logical column, or -1 if hidden.
+int CPlayerPlaylistBar::VisibleIndexOf(int logical) const
+{
+	for (size_t i = 0; i < m_visibleColumns.size(); ++i) {
+		if (m_visibleColumns[i] == logical) { return (int)i; }
+	}
+	return -1;
+}
+
+// Persist current column widths back to settings.
+void CPlayerPlaylistBar::SavePlaylistColumnWidths()
+{
+	if (!IsWindow(m_list.m_hWnd) || !m_pMainFrame) {
+		return;
+	}
+	CAppSettings& s = AfxGetAppSettings();
+	for (size_t i = 0; i < m_visibleColumns.size(); ++i) {
+		const int w = m_list.GetColumnWidth((int)i);
+		const int uw = m_pMainFrame->ScaleX(100) ? (w * 100 / m_pMainFrame->ScaleX(100)) : w;
+		switch (m_visibleColumns[i]) {
+			case COL_NAME: s.nPlaylistColNameWidth = uw; break;
+			case COL_RES:  s.nPlaylistColResWidth  = uw; break;
+			case COL_FPS:  s.nPlaylistColFpsWidth  = uw; break;
+			case COL_TYPE: s.nPlaylistColTypeWidth = uw; break;
+			case COL_SIZE: s.nPlaylistColSizeWidth = uw; break;
+			case COL_DATE: s.nPlaylistColDateWidth = uw; break;
+			default: break;
+		}
+	}
+}
+
+// JD Privacy fork: persist widths whenever the user finishes dragging a divider.
+void CPlayerPlaylistBar::OnHdnEndTrack(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	UNREFERENCED_PARAMETER(pNMHDR);
+	SavePlaylistColumnWidths();
+	if (pResult) { *pResult = 0; }
+}
+
 void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	if (nIDCtl != IDC_PLAYLIST) {
@@ -3358,42 +3453,59 @@ void CPlayerPlaylistBar::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruc
 
 	pDC->SetTextColor(textcolor);
 
-	CString time = m_list.GetItemText(nItem, COL_TIME);
-	if (time.GetLength()) {
-		CSize timesize = pDC->GetTextExtent(time);
-		if ((3 + timesize.cx + 3) < rcItem.Width() / 2) {
-			CRect rc(rcItem);
-			rc.left = rc.right - (3 + timesize.cx + 3);
-			pDC->DrawTextW(time, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
-			rcText.right -= (timesize.cx + 6);
+	// JD Privacy fork: draw the Length (Time) value at its real native column
+	// rect, centred, so it lines up under the header and never abuts the Date
+	// column. rcText is shrunk to the Time column's left so the filename stops
+	// cleanly before it.
+	const int viTimeRead = VisibleIndexOf(COL_TIME);
+	CString time = (viTimeRead >= 0) ? m_list.GetItemText(nItem, viTimeRead) : CString();
+	{
+		CRect rcTimeCell;
+		if (viTimeRead >= 0 && m_list.GetSubItemRect(nItem, viTimeRead, LVIR_BOUNDS, rcTimeCell)) {
+			if (time.GetLength()) {
+				CRect rc(rcTimeCell);
+				rc.DeflateRect(3, 0);
+				pDC->DrawTextW(time, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+			}
+			rcText.right = std::min((LONG)rcText.right, (LONG)rcTimeCell.left);
+		} else if (time.GetLength()) {
+			// Fallback: original right-aligned behaviour.
+			CSize timesize = pDC->GetTextExtent(time);
+			if ((3 + timesize.cx + 3) < rcItem.Width() / 2) {
+				CRect rc(rcItem);
+				rc.left = rc.right - (3 + timesize.cx + 3);
+				pDC->DrawTextW(time, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+				rcText.right -= (timesize.cx + 6);
+			}
 		}
 	}
 
-	// JD Privacy fork: draw enabled metadata columns as fixed-width slices carved
-	// from the right (normal playlist only). Values are read straight from the
-	// cached item fields - there are no native ListView columns for these, so no
-	// horizontal scrollbar and long names simply crop.
+	// JD Privacy fork: draw metadata cells at their real native-column rects,
+	// centre-aligned. Filename and Time are drawn by the existing code below;
+	// here we only paint the optional meta columns. Reading straight from the
+	// cached item fields keeps it cheap.
 	if (GetCurTab().type != PL_EXPLORER) {
-		const CAppSettings& cs = AfxGetAppSettings();
-		struct MetaCol { bool on; int w; CString val; };
-		const MetaCol cols[] = {
-			{ cs.bPlaylistColDate, m_pMainFrame->ScaleX(cs.nPlaylistColDateWidth), pli.GetColDate() },
-			{ cs.bPlaylistColSize, m_pMainFrame->ScaleX(cs.nPlaylistColSizeWidth), pli.GetColSize() },
-			{ cs.bPlaylistColType, m_pMainFrame->ScaleX(cs.nPlaylistColTypeWidth), pli.GetColType() },
-			{ cs.bPlaylistColFps,  m_pMainFrame->ScaleX(cs.nPlaylistColFpsWidth),  pli.GetColFps()  },
-			{ cs.bPlaylistColRes,  m_pMainFrame->ScaleX(cs.nPlaylistColResWidth),  pli.GetColRes()  },
-		};
-		for (const auto& c : cols) {
-			if (!c.on) { continue; }
-			// Keep at least ~40px for the Name column; stop carving otherwise.
-			if (c.w + 6 >= rcText.Width() - m_pMainFrame->ScaleX(40)) { break; }
-			CRect rc(rcText);
-			rc.left = rc.right - c.w;
-			if (c.val.GetLength()) {
-				pDC->DrawTextW(c.val, &rc, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+		for (size_t vi = 0; vi < m_visibleColumns.size(); ++vi) {
+			const int logical = m_visibleColumns[vi];
+			if (logical == COL_NAME || logical == COL_TIME) { continue; }
+			CString val;
+			switch (logical) {
+				case COL_RES:  val = pli.GetColRes();  break;
+				case COL_FPS:  val = pli.GetColFps();  break;
+				case COL_TYPE: val = pli.GetColType(); break;
+				case COL_SIZE: val = pli.GetColSize(); break;
+				case COL_DATE: val = pli.GetColDate(); break;
 			}
-			rcText.right -= c.w;
+			CRect rcCell;
+			if (m_list.GetSubItemRect(nItem, (int)vi, LVIR_BOUNDS, rcCell)) {
+				if (val.GetLength()) {
+					CRect rc(rcCell);
+					rc.DeflateRect(3, 0);
+					pDC->DrawTextW(val, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+				}
+				// Keep the filename clear of the leftmost meta column.
+				rcText.right = std::min((LONG)rcText.right, (LONG)rcCell.left);
+			}
 		}
 	}
 

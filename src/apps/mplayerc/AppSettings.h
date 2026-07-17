@@ -601,6 +601,7 @@ public:
 	int				nPlaylistColTypeWidth = 50;
 	int				nPlaylistColSizeWidth = 60;
 	int				nPlaylistColDateWidth = 70;
+	int				nPlaylistColNameWidth = 0; // 0 = auto (fill remaining)
 	int				nBalance;
 	int				nLoops;
 	bool			fLoopForever;

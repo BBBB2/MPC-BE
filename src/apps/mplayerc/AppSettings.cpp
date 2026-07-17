@@ -1046,6 +1046,7 @@ void CAppSettings::LoadSettings(bool bForce/* = false*/)
 	profile.ReadInt(IDS_R_SETTINGS, L"PlaylistColTypeWidth", nPlaylistColTypeWidth, 20, 400);
 	profile.ReadInt(IDS_R_SETTINGS, L"PlaylistColSizeWidth", nPlaylistColSizeWidth, 20, 400);
 	profile.ReadInt(IDS_R_SETTINGS, L"PlaylistColDateWidth", nPlaylistColDateWidth, 20, 400);
+	profile.ReadInt(IDS_R_SETTINGS, L"PlaylistColNameWidth", nPlaylistColNameWidth, 0, 2000);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.ReadString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.ReadBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);
@@ -1746,6 +1747,7 @@ void CAppSettings::SaveSettings()
 	profile.WriteInt(IDS_R_SETTINGS, L"PlaylistColTypeWidth", nPlaylistColTypeWidth);
 	profile.WriteInt(IDS_R_SETTINGS, L"PlaylistColSizeWidth", nPlaylistColSizeWidth);
 	profile.WriteInt(IDS_R_SETTINGS, L"PlaylistColDateWidth", nPlaylistColDateWidth);
+	profile.WriteInt(IDS_R_SETTINGS, L"PlaylistColNameWidth", nPlaylistColNameWidth);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER, strAudioRendererDisplayName);
 	profile.WriteString(IDS_R_AUDIO, IDS_RS_AUDIORENDERER2, strAudioRendererDisplayName2);
 	profile.WriteBool(IDS_R_AUDIO, IDS_RS_DUALAUDIOOUTPUT, fDualAudioOutput);
